@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class AlphaZeroModel(nn.Module):
@@ -59,10 +58,11 @@ class ResidualBlock(nn.Module):
 class PolicyHead(nn.Module):
     def __init__(self, in_channels, board_size):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 4, kernel_size=1)
+        self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
         self.bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU()
-        self.linear = nn.Linear(board_size**2 * 4, board_size**2)
+        self.linear = nn.Linear(board_size**2 * 2, board_size**2)
+        self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
         out = self.conv(x)
@@ -70,7 +70,7 @@ class PolicyHead(nn.Module):
         out = self.relu(out)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        out = F.log_softmax(out, dim=1)
+        out = self.softmax(out)
         return out
 
 
@@ -93,5 +93,4 @@ class ValueHead(nn.Module):
         out = self.relu(out)
         out = self.linear2(out)
         out = self.tanh(out)
-        print(out.shape())
         return out

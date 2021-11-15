@@ -77,3 +77,24 @@ class ExperienceDataset(Dataset):
             if self.front == (self.rear + 1) % self.max_size:
                 self.front = (self.front + 1) % self.max_size
             self.rear = (self.rear + 1) % self.max_size
+
+    def serialize(self, h5file):
+        h5file.create_group('experience')
+        h5file['experience'].create_dataset('state', data=self.state_memory)
+        h5file['experience'].create_dataset('visit_count', data=self.visit_count_memory)
+        h5file['experience'].create_dataset('visit_count_sum', data=self.visit_count_sum_memory)
+        h5file['experience'].create_dataset('reward', data=self.reward_memory)
+
+    @staticmethod
+    def load(h5file):
+        state_memory = h5file['experience']['state']
+        visit_count_memory = h5file['experience']['visit_count']
+        visit_count_sum_memory = h5file['experience']['visit_count_sum']
+        reward_memory = h5file['experience']['reward']
+
+        loaded_obj = ExperienceDataset()
+        loaded_obj.state_memory = state_memory
+        loaded_obj.visit_count_memory = visit_count_memory
+        loaded_obj.visit_count_sum_memory = visit_count_sum_memory
+        loaded_obj.reward_memory = reward_memory
+        return loaded_obj

@@ -7,10 +7,10 @@ from codes.utils import print_winner
 
 
 class CUI:
-    def __init__(self, game, players):
+    def __init__(self, game_constructor, rule_constructor, players):
         self.board_queue = queue.Queue()
         self.move_queue = queue.Queue()
-        self.game = game(players, self.board_queue, self.move_queue)
+        self.game = game_constructor(rule_constructor, players, self.board_queue, self.move_queue)
         self.board_size = self.game.get_board_size()
 
     def run(self):
@@ -21,11 +21,12 @@ class CUI:
         while not self.game.get_game_state().game_over:
             player, move = self.move_queue.get()
             board = self.board_queue.get()
-            self.queue_task_done()
             print_move(player, move)
             print_board(board)
+            self.queue_task_done()
             time.sleep(0.2)
 
+        self.game.join()
         winner = self.game.get_game_state().winner
         print_winner(winner)
 

@@ -1,9 +1,11 @@
 # -*- coding:utf-8 -*-
 import numpy as np
 import threading
+import copy
 
 from codes.types import Player
-from codes.games.tic_tac_toe.rule import TicTacToeRule
+from codes.types import Point
+from codes import utils
 
 
 class Board:
@@ -18,6 +20,7 @@ class Board:
     def __deepcopy__(self, memodict={}):
         copy_object = Board()
         copy_object.grid = np.copy(self.grid)
+        copy_object.player_num_stones = utils.copy_dict(self.player_num_stones)
 
         return copy_object
 
@@ -43,6 +46,9 @@ class Board:
     def get_grid(self):
         return self.grid
 
+    def remain_point_nums(self):
+        return self.board_size * self.board_size - self.player_num_stones[Player.black] - self.player_num_stones[Player.white]
+
 
 class GameState:
     def __init__(self, rule, board, player, last_move):
@@ -53,21 +59,22 @@ class GameState:
         self.winner = None
         self.last_move = last_move
 
-        self.num_empty_points = self.board.board_size * self.board.board_size
+    def __deepcopy__(self, memodict={}):
+        copy_object = GameState(self.rule, self.board, self.player, self.last_move)
+        copy_object.game_over = self.game_over
+        copy_object.winner = self.winner
 
-        print(self.num_empty_points)
+        return copy_object
 
-    def apply_move(self, move, change_turn=False):
+    def apply_move(self, move):
         """
         apply move on board
+        move can't be pass
         """
-        if move.is_play:
-            self.board.place_stone(self.player, move.point)
+        next_board = copy.deepcopy(self.board)
+        next_board.place_stone(self.player, move.point)
 
-        if change_turn:
-            self.player = self.player.other
-        self.num_empty_points -= 1
-        self.last_move = move
+        return GameState(self.rule, next_board, self.player.other, last_move=move)
 
     def change_turn(self):
         self.player = self.player.other
@@ -78,10 +85,14 @@ class GameState:
         """
         return self.rule.is_on_grid(move.point) and self.board.get(move.point) == 0
 
+    def check_valid_move_idx(self, move_idx):
+        point = Point(move_idx // self.board.board_size, move_idx % self.board.board_size)
+        return self.board.get(point) == 0
+
     def check_game_over(self):
         self.game_over = self.rule.check_game_over(self)
         if self.game_over:
-            self.winner = self.player
+            self.winner = self.player.other
         return self.game_over
 
     def check_can_play(self):
@@ -89,7 +100,7 @@ class GameState:
         check empty point remains
         if there are no empty points, set self.game_over to True and self.winner to Player.both
         """
-        if self.num_empty_points == 0:
+        if self.board.remain_point_nums() == 0:
             self.game_over = True
             self.winner = Player.both
             return False
@@ -97,46 +108,45 @@ class GameState:
             return True
 
     @classmethod
-    def new_game(cls):
+    def new_game(cls, rule_constructor):
         board = Board()
-        rule = TicTacToeRule(board.board_size)
+        rule = rule_constructor(board.board_size)
         return GameState(rule, board, Player.black, None)
 
 
 class TicTacToe(threading.Thread):
-    def __init__(self, players, board_queue, move_queue):
+    def __init__(self, rule_constructor, players, board_queue=None, move_queue=None):
         super().__init__()
         self.daemon = True
 
-        self.game_state = GameState.new_game()
+        self.rule_constructor = rule_constructor
+        self.game_state = GameState.new_game(rule_constructor)
         self.players = players
         self.board_queue = board_queue
         self.move_queue = move_queue
 
     def init_game(self):
-        self.game_state = GameState.new_game()
+        self.game_state = GameState.new_game(self.rule_constructor)
 
     def get_board_size(self):
         return self.game_state.board.board_size
 
+    def get_game_state(self):
+        return self.game_state
+
     def run(self):
         while self.game_state.check_can_play():
-            self.board_queue.join()
-            self.move_queue.join()
-
             move = self.players[self.game_state.player].select_move(self.game_state)
-            self.game_state.apply_move(move)
+            self.game_state = self.game_state.apply_move(move)
 
-            self.board_queue.put(self.game_state.board)
-            self.move_queue.put([self.game_state.player, move])
+            if(self.board_queue is not None and self.move_queue is not None):
+                self.board_queue.put(self.game_state.board)
+                self.move_queue.put([self.game_state.player.other, move])
+                self.board_queue.join()
+                self.move_queue.join()
 
             if self.game_state.check_game_over():
                 break
-
-            self.game_state.change_turn()
-
-    def get_game_state(self):
-        return self.game_state
 
     def get_cur_player(self):
         return self.players[self.game_state.player]

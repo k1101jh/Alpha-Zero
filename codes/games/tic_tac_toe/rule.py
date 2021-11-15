@@ -13,13 +13,14 @@ class TicTacToeRule(AbstractRule):
 
     def get_stone_count(self, game_state, point, direction):
         cnt = 1
+        player_stone = game_state.player.other.value
         for i in range(2):
             dx, dy = self.get_dx_dy(direction * 2 + i)
             next_point = point
             while True:
                 next_point = Point(next_point.row + dx, next_point.col + dy)
                 if self.is_on_grid(next_point):
-                    if game_state.board.get(next_point) == game_state.player.value:
+                    if game_state.board.get(next_point) == player_stone:
                         cnt += 1
                     else:
                         break
