@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
 import io
 
@@ -47,6 +48,26 @@ def point_from_coords(coords):
     col = COLS.index(coords[0])
     row = int(coords[1:]) - 1
     return Point(row=row, col=col)
+
+
+def get_agent_filename(game_name, version, postfix="", prefix=""):
+    cur_file_path = os.path.abspath(__file__)
+    project_path = os.path.dirname(os.path.dirname(cur_file_path))
+    dir_path = os.path.join(project_path, f'save_files/{game_name}/saved_models')
+    file_name = f'{postfix}-v{version}{prefix}'
+
+    os.makedirs(dir_path, exist_ok=True)
+    return os.path.join(dir_path, file_name)
+
+
+def get_experience_filename(game_name, version, postfix="", prefix=""):
+    cur_file_path = os.path.abspath(__file__)
+    project_path = os.path.dirname(os.path.dirname(cur_file_path))
+    dir_path = os.path.join(project_path, f'save_files/{game_name}/saved_experiences')
+    file_name = f'{postfix}-v{version}{prefix}'
+
+    os.makedirs(dir_path, exist_ok=True)
+    return os.path.join(dir_path, file_name)
 
 
 def copy_list(input_list):

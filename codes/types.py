@@ -1,6 +1,16 @@
 import enum
 from collections import namedtuple
 
+game_name_dict = {
+    "TicTacToe": "tic_tac_toe",
+    "Omok": "omok",
+}
+
+board_sizes = {
+    "TicTacToe": 3,
+    "Omok": 9
+}
+
 
 class Player(enum.Enum):
     black = 1

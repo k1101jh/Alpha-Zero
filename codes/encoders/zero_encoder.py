@@ -47,12 +47,15 @@ class ZeroEncoder():
             return self.board_size * self.board_size
 
     def decode_move_index(self, move_index):
-        if move_index is self.board_size + self.board_size:
+        if move_index is self.board_size * self.board_size:
             return Move.pass_turn()
 
         row = move_index // self.board_size
         col = move_index % self.board_size
         return Move.play(Point(row, col))
+    
+    def num_moves(self):
+        return self.board_size * self.board_size
 
     @classmethod
     def new_encoder(board_size):
