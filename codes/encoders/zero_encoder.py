@@ -14,7 +14,7 @@ class ZeroEncoder():
         self.num_planes = 3
 
     def name(self):
-        return "TicTacToeEncoder"
+        return "ZeroEncoder"
 
     def shape(self):
         return self.num_planes, self.board_size, self.board_size
@@ -53,7 +53,7 @@ class ZeroEncoder():
         row = move_index // self.board_size
         col = move_index % self.board_size
         return Move.play(Point(row, col))
-    
+
     def num_moves(self):
         return self.board_size * self.board_size
 

@@ -61,7 +61,7 @@ class TreeNode:
 
 
 class ZeroAgent:
-    def __init__(self, encoder, model, device, c=10.0, rounds_per_move=300, noise=True):
+    def __init__(self, encoder, model, device, c=3.0, rounds_per_move=300, noise=True):
         self.encoder = encoder
         self.device = device
         self.c = c
@@ -77,7 +77,7 @@ class ZeroAgent:
         self.epoch = 0
 
         self.lr = 1e-3
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, eps=1e-6)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def set_device(self, device):
         self.device = torch.device(device)
@@ -88,6 +88,10 @@ class ZeroAgent:
 
     def set_gui(self, gui):
         self.gui = gui
+
+    def set_lr(self, lr):
+        self.lr = lr
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
 
     def set_agent_meta_data(self, rounds_per_move=None, epoch=None):
         if rounds_per_move is not None:
@@ -152,16 +156,27 @@ class ZeroAgent:
                 if node.state.check_can_play() and (not node.state.check_game_over()):
                     next_move_idx = self.select_branch(node)
 
+            # if node.state.game_over:
+            #     move_idx = node.last_move_idx
+            #     value = -1 * node.value
+            #     node = node.parent
+            # else:
+            #     next_move = self.encoder.decode_move_index(next_move_idx)
+            #     new_state = node.state.apply_move(next_move)
+            #     child_node = self.create_node(new_state, next_move_idx, node)
+            #     move_idx = next_move_idx
+            #     value = -1 * child_node.value
+
             # 노드가 없거나 게임이 끝났으면 게임 진행 종료
             # 게임이 끝났으면
             if node.state.game_over:
                 move_idx = node.last_move_idx
-                node = node.parent
                 # 승자가 없으면
                 if node.state.winner == Player.both:
                     value = 0
                 else:
-                    value = 1
+                    value = -1  # parent의 player은 node의 player와 다름. node에서 승리했다면 parent는 패배
+                node = node.parent
             else:
                 next_move = self.encoder.decode_move_index(next_move_idx)
                 new_state = node.state.apply_move(next_move)
@@ -210,7 +225,8 @@ class ZeroAgent:
             with torch.set_grad_enabled(True):
                 output = self.model(state)
                 # categorical crossentropy
-                policy_loss = -1 * torch.mean(torch.sum(p * output[0], dim=-1))
+                # output의 결과는 softmax
+                policy_loss = -1 * torch.mean(torch.sum(p * output[0].log(), dim=-1))
                 value_loss = F.mse_loss(output[1], reward)
 
                 epoch_loss = policy_loss + value_loss
@@ -237,11 +253,10 @@ class ZeroAgent:
             'encoder': self.encoder,
             'model': self.model,
             'c': self.c,
-            'rounds_per_move': self.num_rounds,
+            'rounds_per_move': self.rounds_per_move,
             'num_simulated_games': self.num_simulated_games,
             'epoch': self.epoch,
             'optimizer': self.optimizer.state_dict(),
-            'scheduler': self.scheduler.state_dict()
         }
 
         torch.save(state, pthfile)
@@ -256,11 +271,9 @@ class ZeroAgent:
         num_simulated_games = loaded_file['num_simulated_games']
         epoch = loaded_file['epoch']
         optimizer = loaded_file['optimizer']
-        scheduler = loaded_file['scheduler']
 
         loaded_agent = ZeroAgent(encoder, model, device, c)
         loaded_agent.optimizer.load_state_dict(optimizer)
-        loaded_agent.scheduler.load_state_dict(scheduler)
         loaded_agent.set_agent_meta_data(rounds_per_move=rounds_per_move, epoch=epoch)
         print("simulated %d games." % num_simulated_games)
         return loaded_agent

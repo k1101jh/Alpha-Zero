@@ -1,3 +1,5 @@
+# 참고: https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/2_AlphaOmok/model.py
+
 import torch.nn as nn
 
 
@@ -46,7 +48,7 @@ class ResidualBlock(nn.Module):
             nn.ReLU(),
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(in_channels))
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
 
     def forward(self, x):
         out = self.residual_block(x)
@@ -60,9 +62,9 @@ class PolicyHead(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
         self.bn = nn.BatchNorm2d(2)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
         self.linear = nn.Linear(board_size**2 * 2, board_size**2)
-        self.softmax = nn.LogSoftmax(dim=-1)
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
         out = self.conv(x)
@@ -79,7 +81,7 @@ class ValueHead(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 1, kernel_size=1)
         self.bn = nn.BatchNorm2d(1)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
         self.linear1 = nn.Linear(board_size**2, 64)
         self.linear2 = nn.Linear(64, 1)
         self.tanh = nn.Tanh()

@@ -2,9 +2,11 @@
 import os
 import sys
 import io
+import importlib
 
 from codes.types import Player
 from codes.types import Point
+from codes.types import game_name_dict
 
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding='utf-8')
@@ -16,6 +18,22 @@ STONE_TO_CHAR = {
     Player.black.value: ' ● ',
     Player.white.value: ' ○ ',
 }
+
+
+def get_rule_constructor(game_name, rule_name):
+    module = importlib.import_module(f'codes.games.{game_name_dict[game_name]}.rule')
+    constructor = getattr(module, rule_name)
+    return constructor
+
+
+def get_game_state_constructor(name):
+    module = importlib.import_module(f'codes.games.{game_name_dict[name]}.game_state')
+    constructor = getattr(module, "GameState")
+    return constructor
+
+
+def print_turn(game_state):
+    print(f'{game_state.player.name} turn!')
 
 
 def print_move(player, move):
