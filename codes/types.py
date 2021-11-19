@@ -6,9 +6,9 @@ game_name_dict = {
     "Omok": "omok",
 }
 
-board_sizes = {
+board_size_dict = {
     "TicTacToe": 3,
-    "Omok": 9
+    "Omok": 6,
 }
 
 
@@ -21,6 +21,17 @@ class Player(enum.Enum):
     def other(self):
         assert self is not Player.both
         return Player.black if self == Player.white else Player.white
+
+    @property
+    def forbidden(self):
+        return FORBIDDEN_POINT[self]
+
+
+FORBIDDEN_POINT = {
+    Player.black: 4,
+    Player.white: 5,
+    Player.both: 6,
+}
 
 
 class Point(namedtuple('Point', 'row col')):
