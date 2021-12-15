@@ -11,7 +11,7 @@ from codes import utils
 class Board:
     def __init__(self):
         self.board_size = board_size_dict['Omok']
-        self.grid = np.zeros((self.board_size, self.board_size), dtype=np.int8)
+        self.grid = np.zeros((self.board_size, self.board_size), dtype=np.int)
         self.player_num_stones = {
             Player.black: 0,
             Player.white: 0,
@@ -30,12 +30,6 @@ class Board:
         """
         self.grid[point] = player.value
         self.player_num_stones[player] += 1
-
-    def is_on_grid(self, point):
-        """
-        check is point is on grid
-        """
-        return 0 <= point.row < self.board_size and 0 <= point.col < self.board_size
 
     def get(self, point):
         """
@@ -83,29 +77,26 @@ class GameState:
         """
         if point on board is 0, return True
         """
-        return self.rule.is_on_grid(move.point) and self.board.get(move.point) == 0
+        return utils.is_on_grid(move.point, self.board.board_size) and self.board.get(move.point) == 0
 
     def check_valid_move_idx(self, move_idx):
         point = Point(move_idx // self.board.board_size, move_idx % self.board.board_size)
         return self.board.get(point) == 0
 
     def check_game_over(self):
-        self.game_over = self.rule.check_game_over(self)
         if self.game_over:
-            self.winner = self.player.other
-        return self.game_over
-
-    def check_can_play(self):
-        """
-        check empty point remains
-        if there are no empty points, set self.game_over to True and self.winner to Player.both
-        """
-        if self.board.remain_point_nums() == 0:
-            self.game_over = True
-            self.winner = Player.both
-            return False
+            return self.game_over
         else:
-            return not self.game_over
+            if self.rule.check_game_over(self):
+                # 규칙에 의한 게임 종료 확인
+                self.game_over = True
+                self.winner = self.player.other
+            elif self.board.remain_point_nums() == 0:
+                # 규칙에 의해 게임이 종료되지 않았고
+                # 돌을 놓을 자리가 없는 경우 무승부
+                self.game_over = True
+                self.winner = Player.both
+            return self.game_over
 
     @classmethod
     def new_game(cls, rule_constructor):

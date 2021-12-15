@@ -3,6 +3,7 @@ import os
 import sys
 import io
 import importlib
+import math
 
 from codes.types import Player
 from codes.types import Point
@@ -15,8 +16,8 @@ COLS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'
 EMPTY = 0
 STONE_TO_CHAR = {
     EMPTY: '━╋━',
-    Player.black.value: ' ● ',
-    Player.white.value: ' ○ ',
+    Player.black.value: ' ○ ',
+    Player.white.value: ' ● ',
 }
 
 
@@ -34,6 +35,7 @@ def get_game_state_constructor(name):
 
 def print_turn(game_state):
     print(f'{game_state.player.name} turn!')
+    sys.stdout.flush()
 
 
 def print_move(player, move):
@@ -42,6 +44,7 @@ def print_move(player, move):
     else:
         move_str = '%s%d' % (COLS[move.point.col], move.point.row + 1)
     print('%s %s' % (player, move_str))
+    sys.stdout.flush()
 
 
 def print_board(board):
@@ -53,6 +56,20 @@ def print_board(board):
             line.append(STONE_TO_CHAR[stone])
         print('%s%2d %s' % (bump, row + 1, ''.join(line)))
     print('     ' + '  '.join(COLS[:board.board_size]))
+    sys.stdout.flush()
+
+
+def print_visit_count(visit_counts):
+    board_size = int(math.sqrt(len(visit_counts)))
+    for row in range(board_size - 1, -1, -1):
+        bump = " " if row <= board_size else ""
+        print('\n%s%2d' % (bump, row + 1), end='')
+        for col in range(0, board_size):
+            visit_count = visit_counts[row * board_size + col]
+            print('%4d ' % (visit_count), end='')
+        print('')
+    print('      ' + '    '.join(COLS[:board_size]))
+    sys.stdout.flush()
 
 
 def print_winner(winner):
@@ -60,6 +77,7 @@ def print_winner(winner):
         print("DRAW!!!")
     else:
         print(winner.name, "WINS!!!")
+    sys.stdout.flush()
 
 
 def point_from_coords(coords):
@@ -68,21 +86,18 @@ def point_from_coords(coords):
     return Point(row=row, col=col)
 
 
+def is_on_grid(point, board_size):
+    """
+        check point is on grid
+    """
+    return 0 <= point.row < board_size and 0 <= point.col < board_size
+
+
 def get_agent_filename(game_name, version, postfix="", prefix=""):
     cur_file_path = os.path.abspath(__file__)
     project_path = os.path.dirname(os.path.dirname(cur_file_path))
     dir_path = os.path.join(project_path, f'save_files/{game_name}/saved_models')
-    file_name = f'{postfix}-v{version}{prefix}'
-
-    os.makedirs(dir_path, exist_ok=True)
-    return os.path.join(dir_path, file_name)
-
-
-def get_experience_filename(game_name, version, postfix="", prefix=""):
-    cur_file_path = os.path.abspath(__file__)
-    project_path = os.path.dirname(os.path.dirname(cur_file_path))
-    dir_path = os.path.join(project_path, f'save_files/{game_name}/saved_experiences')
-    file_name = f'{postfix}-v{version}{prefix}'
+    file_name = f'{postfix}-v{version}{prefix}.pth'
 
     os.makedirs(dir_path, exist_ok=True)
     return os.path.join(dir_path, file_name)

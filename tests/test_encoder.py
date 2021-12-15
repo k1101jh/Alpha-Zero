@@ -3,17 +3,19 @@ import numpy as np
 from codes.types import Player
 from codes.types import Point
 from codes.types import Move
-from codes.games.tic_tac_toe.game import Board
-from codes.games.tic_tac_toe.game import GameState
+from codes.games.tic_tac_toe.game_state import Board
+from codes.games.tic_tac_toe.game_state import GameState
+from codes.games.tic_tac_toe.rule import TicTacToeRule
 
 
 class ZeroEncoder():
     def __init__(self, board_size):
         # 0. black stones
         # 1. white stones
-        # 2. fill 1 if player is black. fill 0 if player is white
+        # 2. last move
+        # 3. fill 1 if player is black. fill 0 if player is white
         self.board_size = board_size
-        self.num_planes = 3
+        self.num_planes = 4
 
     def name(self):
         return "TicTacToeEncoder"
@@ -25,7 +27,7 @@ class ZeroEncoder():
         encoded_game_state = np.zeros(self.shape(), dtype=float)
         player = game_state.player
         if player == Player.black:
-            encoded_game_state[2] = 1.
+            encoded_game_state[3] = 1.
 
         board_grid = game_state.board.get_grid()
         black_stones = np.where(board_grid == 1)
@@ -33,6 +35,10 @@ class ZeroEncoder():
 
         encoded_game_state[0][black_stones] = 1.0
         encoded_game_state[1][white_stones] = 1.0
+
+        if game_state.last_move is not None:
+            last_move_point = game_state.last_move.point
+            encoded_game_state[2][last_move_point[0], last_move_point[1]] = 1.0
 
         return encoded_game_state
 
@@ -63,10 +69,12 @@ class ZeroEncoder():
 
 if __name__ == "__main__":
     board = Board()
+    rule = TicTacToeRule(board.board_size)
     board.grid = np.array([[1, 2, 0],
                            [2, 1, 0],
                            [0, 1, 2]], dtype=np.int8)
-    game_state = GameState(board, Player.white)
+    game_state = GameState(rule, board, Player.black, None)
+    game_state.last_
     encoder = ZeroEncoder(3)
 
     encoded_game_state = encoder.encode(game_state)
