@@ -1,5 +1,6 @@
 from codes.types import Point
 from codes.games.abstract_rule import AbstractRule
+from codes import utils
 
 
 class FreeRule(AbstractRule):
@@ -14,7 +15,7 @@ class FreeRule(AbstractRule):
             next_point = point
             while True:
                 next_point = Point(next_point.row + dx, next_point.col + dy)
-                if self.is_on_grid(next_point):
+                if utils.is_on_grid(next_point, self.board_size):
                     if game_state.board.get(next_point) == player_stone:
                         cnt += 1
                     else:

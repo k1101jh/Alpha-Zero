@@ -12,9 +12,6 @@ class AbstractRule(metaclass=ABCMeta):
     def get_dx_dy(self, direction):
         return self.list_dx[direction], self.list_dy[direction]
 
-    def is_on_grid(self, point):
-        return 0 <= point.row < self.board_size and 0 <= point.col < self.board_size
-
     @abstractmethod
     def check_game_over(self, game_state) -> bool:
         pass

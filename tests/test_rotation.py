@@ -21,11 +21,13 @@ def test_rotation():
 
     for state, visit_count in zip(states, visit_counts):
         for i in range(4):
-            new_states.append(np.rot90(state, i, axes=(1, 2)))
-            new_visit_counts.append(np.rot90(visit_count.reshape(board_size, board_size), i).flatten())
+            rotated_state = np.rot90(state, i, axes=(1, 2))
+            rotated_visit_count = np.rot90(visit_count.reshape(board_size, board_size), i)
+            new_states.append(rotated_state)
+            new_visit_counts.append(rotated_visit_count.flatten())
 
-        new_states.append(np.flip(state, 2))
-        new_visit_counts.append(np.fliplr(visit_count.reshape(board_size, board_size)).flatten())
+            new_states.append(np.fliplr(rotated_state))
+            new_visit_counts.append(np.fliplr(rotated_visit_count).flatten())
 
     for i, (state, visit_count) in enumerate(zip(new_states, new_visit_counts)):
         print("case: ", i)

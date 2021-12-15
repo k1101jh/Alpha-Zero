@@ -20,6 +20,8 @@ class ExperienceCollector:
         self._current_episode_visit_counts.append(visit_counts)
 
     def complete_episode(self, reward):
+        # states = self._current_episode_states
+        # visit_counts = self._current_episode_visit_counts
         states, visit_counts = self.episode_augmentation()
         num_states = len(states)
         self.states += states
@@ -36,16 +38,20 @@ class ExperienceCollector:
         new_visit_counts = []
         for state, visit_count in zip(self._current_episode_states, self._current_episode_visit_counts):
             for i in range(4):
-                new_states.append(np.rot90(state, i, axes=(1, 2)))
-                new_visit_counts.append(np.rot90(visit_count.reshape(board_size, board_size), i).flatten())
+                rotated_state = np.rot90(state, i, axes=(1, 2))
+                rotated_visit_count = np.rot90(visit_count.reshape(board_size, board_size), i)
+                new_states.append(rotated_state)
+                new_visit_counts.append(rotated_visit_count.flatten())
 
-            new_states.append(np.flip(state, 2))
-            new_visit_counts.append(np.fliplr(visit_count.reshape(board_size, board_size)).flatten())
+                new_states.append(np.fliplr(rotated_state))
+                new_visit_counts.append(np.fliplr(rotated_visit_count).flatten())
         return new_states, new_visit_counts
 
 
 class ExperienceDataset(Dataset):
     def __init__(self, board_size, num_planes, max_size):
+        self.board_size = board_size
+        self.num_planes = num_planes
         self.max_size = max_size
         self.front = 0
         self.rear = 0
@@ -77,24 +83,3 @@ class ExperienceDataset(Dataset):
             if self.front == (self.rear + 1) % self.max_size:
                 self.front = (self.front + 1) % self.max_size
             self.rear = (self.rear + 1) % self.max_size
-
-    def serialize(self, h5file):
-        h5file.create_group('experience')
-        h5file['experience'].create_dataset('state', data=self.state_memory)
-        h5file['experience'].create_dataset('visit_count', data=self.visit_count_memory)
-        h5file['experience'].create_dataset('visit_count_sum', data=self.visit_count_sum_memory)
-        h5file['experience'].create_dataset('reward', data=self.reward_memory)
-
-    @staticmethod
-    def load(h5file):
-        state_memory = h5file['experience']['state']
-        visit_count_memory = h5file['experience']['visit_count']
-        visit_count_sum_memory = h5file['experience']['visit_count_sum']
-        reward_memory = h5file['experience']['reward']
-
-        loaded_obj = ExperienceDataset()
-        loaded_obj.state_memory = state_memory
-        loaded_obj.visit_count_memory = visit_count_memory
-        loaded_obj.visit_count_sum_memory = visit_count_sum_memory
-        loaded_obj.reward_memory = reward_memory
-        return loaded_obj

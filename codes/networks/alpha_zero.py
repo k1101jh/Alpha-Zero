@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class AlphaZeroModel(nn.Module):
-    def __init__(self, in_channels, mid_channels=128, num_blocks=20, board_size=15):
+    def __init__(self, in_channels, mid_channels=128, num_blocks=5, board_size=15):
         super().__init__()
         self.conv = ConvBnReluBlock(in_channels, mid_channels)
         self.layers = self._make_layer(mid_channels, num_blocks)
@@ -45,7 +45,7 @@ class ResidualBlock(nn.Module):
         self.residual_block = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(in_channels),
-            nn.ReLU(),
+            nn.ReLU(True),
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(in_channels))
         self.relu = nn.ReLU(True)
@@ -60,10 +60,10 @@ class ResidualBlock(nn.Module):
 class PolicyHead(nn.Module):
     def __init__(self, in_channels, board_size):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
-        self.bn = nn.BatchNorm2d(2)
+        self.conv = nn.Conv2d(in_channels, 4, kernel_size=1)
+        self.bn = nn.BatchNorm2d(4)
         self.relu = nn.ReLU(True)
-        self.linear = nn.Linear(board_size**2 * 2, board_size**2)
+        self.linear = nn.Linear(board_size**2 * 4, board_size**2)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
@@ -79,10 +79,10 @@ class PolicyHead(nn.Module):
 class ValueHead(nn.Module):
     def __init__(self, in_channels, board_size):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 1, kernel_size=1)
-        self.bn = nn.BatchNorm2d(1)
+        self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
+        self.bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU(True)
-        self.linear1 = nn.Linear(board_size**2, 64)
+        self.linear1 = nn.Linear(board_size * board_size * 2, 64)
         self.linear2 = nn.Linear(64, 1)
         self.tanh = nn.Tanh()
 

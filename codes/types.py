@@ -8,7 +8,8 @@ game_name_dict = {
 
 board_size_dict = {
     "TicTacToe": 3,
-    "Omok": 6,
+    "MiniOmok": 9,
+    "Omok": 15,
 }
 
 

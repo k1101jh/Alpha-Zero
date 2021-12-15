@@ -1,7 +1,6 @@
 import os
 import copy
 import time
-import h5py
 from tqdm import tqdm
 import torch
 import torch.multiprocessing as mp
@@ -26,20 +25,16 @@ AGENT_NAME = "ZeroAgent"
 GAME_NAME = "Omok"
 RULE_NAME = "FreeRule"
 BOARD_SIZE = board_size_dict[GAME_NAME]
-MAX_MEMORY_SIZE = 10000
-EPOCHS = 200
+MAX_MEMORY_SIZE = 20000
+EPOCHS = 1000
 BATCH_SIZE = 512
-ROUNDS_PER_MOVE = 200
+ROUNDS_PER_MOVE = 500
 NUM_MAX_PROCESSES = os.cpu_count()
 NUM_SIMULATE_GAMES = os.cpu_count()
-NUM_TEST_GAMES = 24
-LEARNING_RATE = 2e-4
+NUM_THREADS_PER_ROUND = 1
+NUM_TEST_GAMES = NUM_SIMULATE_GAMES * 2
+LEARNING_RATE = 3e-4
 LOAD_AGENT_VERSION = 1
-SAVE_EPISODE = True
-LOAD_SAVED_EPISODE = False
-LOAD_EPISODE_VERSION = 1
-SAVE_EPISODE_VERSION = 1
-EPISODE_SAVE_PATH = utils.get_experience_filename(GAME_NAME, SAVE_EPISODE_VERSION)
 
 
 def train():
@@ -48,24 +43,51 @@ def train():
     load_agent_filename = utils.get_agent_filename(GAME_NAME, LOAD_AGENT_VERSION)
 
     encoder = ZeroEncoder(BOARD_SIZE)
-    memory = ExperienceDataset(BOARD_SIZE, encoder.num_planes, MAX_MEMORY_SIZE)
+
+    # get class constructor
     game_state_constructor = get_game_state_constructor(GAME_NAME)
     rule_constructor = get_rule_constructor(GAME_NAME, RULE_NAME)
+
     # load or generate agent
     if os.path.exists(load_agent_filename):
-        agent = ZeroAgent.load_agent(load_agent_filename, 'cpu')
+        agent = ZeroAgent.load_agent(load_agent_filename, 'cpu', NUM_THREADS_PER_ROUND)
     else:
         model = AlphaZeroModel(encoder.shape()[0], board_size=BOARD_SIZE)
-        agent = ZeroAgent(encoder, model, device='cpu', rounds_per_move=ROUNDS_PER_MOVE)
-        agent.set_lr(LEARNING_RATE)
+        agent = ZeroAgent(encoder, model, device='cpu',
+                          rounds_per_move=ROUNDS_PER_MOVE,
+                          num_threads_per_round=NUM_THREADS_PER_ROUND,
+                          lr=LEARNING_RATE)
+        agent_version = 0
+
+    # generate experience memory
+    memory = ExperienceDataset(BOARD_SIZE, encoder.num_planes, MAX_MEMORY_SIZE)
 
     start_epoch = agent.epoch
     for epoch in tqdm(range(start_epoch, start_epoch + EPOCHS)):
+        num_black_wins = 0
+        num_white_wins = 0
+        num_draw = 0
+
         prev_agent = copy.deepcopy(agent)
 
         # generate experience
-        collectors = generate_experience(game_state_constructor, rule_constructor, agent, prev_agent, collect_exp=True)
+        game_results, collectors = generate_experience(game_state_constructor, rule_constructor, agent, prev_agent, collect_exp=True)
         memory.add_experiences(collectors)
+
+        # game statistics
+        for winner in game_results:
+            if winner is Player.black:
+                num_black_wins += 1
+            elif winner is Player.white:
+                num_white_wins += 1
+            else:
+                num_draw += 1
+
+        writer.add_scalars('game statistics',
+                           {'Black Win Rate': num_black_wins / NUM_SIMULATE_GAMES,
+                            'White Win Rate': num_white_wins / NUM_SIMULATE_GAMES,
+                            'Draw Rate': num_draw / NUM_SIMULATE_GAMES},
+                           epoch)
 
         # train agent
         loss, policy_loss, value_loss = agent.train(memory, BATCH_SIZE)
@@ -80,7 +102,7 @@ def train():
 
         if (epoch + 1) % 10 == 0:
             win_rate, draw_rate = evaluate_bot(game_state_constructor, rule_constructor, agent, prev_agent)
-            writer.add_scalars('win rate/draw rate',
+            writer.add_scalars('evaluate results',
                                {'Win Rate': win_rate,
                                 'Draw Rate': draw_rate},
                                epoch)
@@ -88,9 +110,6 @@ def train():
             agent_version += 1
             update_agent_filename = utils.get_agent_filename(GAME_NAME, agent_version)
             agent.save_agent(update_agent_filename)
-
-    with h5py.File(EPISODE_SAVE_PATH, 'w') as episode_out:
-        memory.serialize(episode_out)
 
     writer.close()
 
@@ -133,15 +152,14 @@ def simulate_game(game_state_constructor, rule_constructor, black_agent, white_a
             black_collector.complete_episode(0)
             white_collector.complete_episode(0)
 
-        result_queue.put(black_collector)
-        result_queue.put(white_collector)
+        result_queue.put((game_result, (black_collector, white_collector)))
     # evaluate game
     else:
         game.start()
         game.join()
 
         game_result = game.game_state.winner
-        result_queue.put(game_result)
+        result_queue.put((game_result, None))
 
     utils.print_board(game.game_state.board)
     utils.print_winner(game_result)
@@ -154,7 +172,8 @@ def generate_experience(game_state_constructor, rule_constructor, black_agent, w
     start_time = time.time()
 
     num_remain_games = NUM_SIMULATE_GAMES
-    results = []
+    collectors = []
+    winners = []
 
     while num_remain_games > 0:
         num_processes = min(NUM_MAX_PROCESSES, num_remain_games)
@@ -182,7 +201,12 @@ def generate_experience(game_state_constructor, rule_constructor, black_agent, w
         while processes:
             running = any(p.is_alive() for p in processes)
             while not result_queue.empty():
-                results.append(result_queue.get())
+                queue_item = result_queue.get()
+                winner = queue_item[0]
+                winners.append(winner)
+                if(queue_item[1] is not None):
+                    collectors.append(queue_item[1][0])
+                    collectors.append(queue_item[1][1])
                 num_complete_games += 1
             if not running:
                 break
@@ -191,7 +215,7 @@ def generate_experience(game_state_constructor, rule_constructor, black_agent, w
 
     print('\n%d games elapsed time: %d' % (NUM_SIMULATE_GAMES, time.time() - start_time))
 
-    return results
+    return winners, collectors
 
 
 def evaluate_bot(game_state_constructor, rule_constructor, agent, prev_agent):
@@ -202,7 +226,7 @@ def evaluate_bot(game_state_constructor, rule_constructor, agent, prev_agent):
     black_agent, white_agent = agent, prev_agent
 
     for i in range(2):
-        winners = generate_experience(game_state_constructor, rule_constructor, black_agent, white_agent, collect_exp=False)
+        winners, _ = generate_experience(game_state_constructor, rule_constructor, black_agent, white_agent, collect_exp=False)
 
         for winner in winners:
             print('Winner:', winner)

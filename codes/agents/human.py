@@ -6,24 +6,28 @@ from codes.utils import point_from_coords
 class Human(Agent):
     def __init__(self):
         super().__init__()
-        self.queue = None
+        self.input_queue = None
 
-    def set_input_queue(self, queue):
-        self.queue = queue
+    def set_input_queue(self, input_queue):
+        self.input_queue = input_queue
 
     def select_move(self, game_state):
-        if self.queue is None:
+        if self.input_queue is None:
             while True:
-                inp = input('-- ')
-                point = point_from_coords(inp.strip())
-                move = Move.play(point)
-                if game_state.check_valid_move(move):
-                    break
+                try:
+                    inp = input('-- ')
+                    point = point_from_coords(inp.strip())
+                    move = Move.play(point)
+                    if game_state.check_valid_move(move):
+                        break
+                except ValueError:
+                    continue
         else:
             while True:
-                move = self.queue.get()
-                self.queue.task_done()
-                if game_state.check_vaild_move(move):
+                self.input_queue.empty()
+                move = self.input_queue.get()
+                self.input_queue.task_done()
+                if game_state.check_valid_move(move):
                     break
 
-        return move
+        return move, None
