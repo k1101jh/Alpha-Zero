@@ -19,7 +19,6 @@ class Branch:
         Args:
             prior (float): Prior of this branch.
         """
-
         self.prior = prior
         self.visit_count = 0
         self.total_value = 0.0
@@ -37,7 +36,6 @@ class TreeNode:
             parent (TreeNode): Parent node.
             last_move_idx (int): Last move index.
         """
-
         self.state = state
         self.value = value
         self.parent = parent
@@ -95,7 +93,6 @@ class ZeroAgent(Agent):
             noise (bool, optional): [description]. Defaults to True.
             lr (float, optional): [description]. Defaults to 1e-3.
         """
-
         super().__init__()
         self.encoder = encoder
         self.device = device
@@ -115,7 +112,7 @@ class ZeroAgent(Agent):
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, 250, 0.1)
 
-    def __deepcopy__(self, memodict={}):
+    def __deepcopy__(self, memo):
         """[summary]
 
         Args:
@@ -124,7 +121,6 @@ class ZeroAgent(Agent):
         Returns:
             ZeroAgent: Copied ZeroAgent.
         """
-
         copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.rounds_per_move, self.num_threads_per_round, self.noise)
         copy_object.set_collector(self.collector)
         copy_object.num_simulated_games = self.num_simulated_games

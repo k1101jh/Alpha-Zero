@@ -18,7 +18,6 @@ class CUI:
             rule_type ([type]): [description]
             players ([type]): [description]
         """
-
         self.event_queue = queue.Queue()
         self.game = Game(game_type, rule_type, players, self.event_queue)
         self.board_size = self.game.get_board_size()

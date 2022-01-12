@@ -8,7 +8,6 @@ class Human(Agent):
         """[summary]
             Human Player.
         """
-
         super().__init__()
         self.input_queue = None
 

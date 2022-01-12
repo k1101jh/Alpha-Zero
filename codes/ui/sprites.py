@@ -19,7 +19,6 @@ class StoneSprite(pygame.sprite.Sprite):
             pos (list): [description]
             size ([type]): [description]
         """
-
         super().__init__(group)
         global PLAYER_COLOR
 
@@ -45,7 +44,6 @@ class VisitCountSprite(pygame.sprite.Sprite):
             size ([type]): [description]
             text (string): visit count.
         """
-
         super().__init__(group)
         self.__font = pygame.font.SysFont("freesans", 24, bold=True)
         self.__text = text

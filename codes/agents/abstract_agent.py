@@ -4,9 +4,6 @@ from abc import abstractmethod
 
 class Agent(metaclass=ABCMeta):
     def __init__(self):
-        """[summary]
-        """
-
         pass
 
     def set_input_queue(self, input_queue):

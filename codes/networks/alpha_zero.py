@@ -13,7 +13,6 @@ class AlphaZeroModel(nn.Module):
             num_blocks (int, optional): Num of residual blocks. Defaults to 7.
             board_size (int, optional): Size of board. Defaults to 15.
         """
-
         super().__init__()
         self.conv = ConvBnReluBlock(in_channels, mid_channels)
         self.layers = self._make_layer(mid_channels, num_blocks)
@@ -43,7 +42,6 @@ class ConvBnReluBlock(nn.Module):
             in_channels (int): Num of input channels.
             out_channels (int): Num of output channels.
         """
-
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(out_channels)
@@ -63,7 +61,6 @@ class ResidualBlock(nn.Module):
         Args:
             in_channels (int): Num of input channels.
         """
-
         super().__init__()
         self.residual_block = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
@@ -89,7 +86,6 @@ class PolicyHead(nn.Module):
             in_channels (int): Num of input channels.
             board_size (int): Size of board.
         """
-
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 4, kernel_size=1)
         self.bn = nn.BatchNorm2d(4)
@@ -116,7 +112,6 @@ class ValueHead(nn.Module):
             in_channels (int): Num of input channels.
             board_size (int): Size of board.
         """
-
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
         self.bn = nn.BatchNorm2d(2)

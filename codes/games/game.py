@@ -15,7 +15,6 @@ class Game(threading.Thread):
             players (dictionary): Dict with two players.
             event_queue ([type], optional): Event queue to communicate with UI. Defaults to None.
         """
-
         super().__init__()
         self.daemon = True
 

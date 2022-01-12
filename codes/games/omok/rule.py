@@ -10,7 +10,6 @@ class FreeRule(AbstractRule):
         Args:
             board_size (int): Size of board.
         """
-
         super().__init__(board_size)
 
     def get_stone_count(self, game_state, point, direction):

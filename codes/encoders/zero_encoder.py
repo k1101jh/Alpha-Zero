@@ -16,8 +16,7 @@ class ZeroEncoder():
 
         Args:
             board_size ([type]): [description]
-        """
-        self.name = "ZeroEncoder"
+        """        self.name = "ZeroEncoder"
         self.board_size = board_size
         self.num_planes = 4
 
@@ -48,13 +47,11 @@ class ZeroEncoder():
         return board_tensor
 
     def encode_move(self, move):
-        """
-        return move idx on flatten board
+        """        return move idx on flatten board
         if board_size is N,
         0 ~ N-1 : point on board
         N       : pass turn
         """
-
         if move.is_play:
             return (self.board_size * move.point.row + move.point.col)
         else:

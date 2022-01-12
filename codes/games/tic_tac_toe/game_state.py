@@ -17,7 +17,6 @@ class GameState:
             player ([type]): [description]
             last_move (Move): Last movement.
         """
-
         self.rule = rule
         self.board = board
         self.player = player
@@ -25,7 +24,7 @@ class GameState:
         self.winner = None
         self.last_move = last_move
 
-    def __deepcopy__(self, memodict={}):
+    def __deepcopy__(self, memo):
         """[summary]
 
         Args:
@@ -34,7 +33,6 @@ class GameState:
         Returns:
             GameState: Copied GameState.
         """
-
         copy_object = GameState(self.rule, self.board, self.player, self.last_move)
         copy_object.game_over = self.game_over
         copy_object.winner = self.winner
@@ -42,11 +40,9 @@ class GameState:
         return copy_object
 
     def apply_move(self, move):
-        """
-        apply move on board
+        """        apply move on board
         move can't be pass
         """
-
         next_board = copy.deepcopy(self.board)
         next_board.place_stone(self.player, move.point)
 
@@ -56,10 +52,8 @@ class GameState:
         self.player = self.player.other
 
     def check_valid_move(self, move):
+        """        if point on board is 0, return True
         """
-        if point on board is 0, return True
-        """
-
         return utils.is_on_grid(move.point, self.board.board_size) and self.board.get(move.point) == 0
 
     def check_valid_move_idx(self, move_idx):

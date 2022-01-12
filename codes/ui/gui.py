@@ -33,7 +33,6 @@ class GUI:
             rule_type ([type]): [description]
             players (dict): [description]
         """
-
         self.event_queue = queue.Queue()
         self.mouse_input_queue = queue.Queue()
 
