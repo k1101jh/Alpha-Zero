@@ -1,8 +1,8 @@
 import numpy as np
 
-from codes.types import Player
-from codes.types import Point
-from codes.types import Move
+from codes.game_types import Player
+from codes.game_types import Point
+from codes.game_types import Move
 
 
 class ZeroEncoder():

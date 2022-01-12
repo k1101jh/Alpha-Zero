@@ -1,16 +1,14 @@
 import sys
 import pygame
 import queue
-import threading
 
 from codes.games.game import Game
-from codes.types import Point
-from codes.types import Player
-from codes.types import Move
+from codes.game_types import Player
+from codes.game_types import Move
 from codes.ui.board_ui import BoardUI
 from codes.ui.menu_ui import MenuUI
 from codes import utils
-from codes.types import UIEvent
+from codes.game_types import UIEvent
 
 
 FPS = 30
@@ -82,7 +80,7 @@ class GUI:
 
             # 메뉴에 현재 플레이어 표시
             game_state = self.game.get_game_state()
-            if game_state.get_winner() is None:
+            if not game_state.game_over:
                 self.menu_ui.update_turn(game_state.player)
 
             # 이벤트 처리

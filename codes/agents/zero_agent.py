@@ -1,7 +1,6 @@
 # 참고한 코드: https://github.com/maxpumperla/deep_learning_and_the_game_of_go/blob/master/code/dlgo/zero/agent.py
 import numpy as np
 import heapq
-import copy
 import threading
 import torch
 import torch.nn.functional as F
@@ -10,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from codes.agents.abstract_agent import Agent
-from codes.types import Player
+from codes.game_types import Player
 
 
 class Branch:
@@ -161,65 +160,6 @@ class ZeroAgent(Agent):
             return q + self.c * p * np.sqrt(total_n) / (n + 1)
 
         return heapq.nlargest(num, node.move_idxes(), key=score_branch)
-
-    # def select_move(self, game_state):
-    #     """
-    #     select move by mcts.
-    #     return move idx
-    #     """
-    #     root = self.create_node(game_state)
-    #     remain_rounds = self.rounds_per_move
-    #     # 게임 진행
-    #     for round in tqdm(range(remain_rounds)):
-    #         node = root
-    #         next_move_idx = self.select_branch(root)
-    #         while node.has_child(next_move_idx):
-    #             node = node.get_child(next_move_idx)
-    #             if not node.state.game_over:
-    #                 next_move_idx = self.select_branch(node)
-
-    #         # 노드가 없거나 승자가 나왔으면 게임 진행 종료
-    #         # 게임이 끝났으면
-    #         if node.state.game_over:
-    #             move_idx = node.last_move_idx
-    #             # 승자가 없으면(돌을 더 놓을 수 없으면)
-    #             if node.state.winner == Player.both:
-    #                 value = 0
-    #             else:
-    #                 value = 1
-
-    #             node = node.parent
-    #         else:
-    #             next_move = self.encoder.decode_move_index(next_move_idx)
-    #             new_state = node.state.apply_move(next_move)
-    #             child_node = self.create_node(new_state, next_move_idx, parent=node)
-
-    #             move_idx = next_move_idx
-    #             if child_node.state.check_game_over():
-    #                 if child_node.state.winner == Player.both:
-    #                     value = 0
-    #                 else:
-    #                     value = 1
-    #             else:
-    #                 value = -1 * child_node.value.item()
-
-    #         while node is not None:
-    #             node.record_visit(move_idx, value)
-    #             move_idx = node.last_move_idx
-    #             node = node.parent
-    #             value = -1 * value
-
-    #     visit_counts = np.array([
-    #         root.visit_count(idx)
-    #         for idx in range(self.encoder.num_moves())
-    #     ])
-
-    #     if self.collector is not None:
-    #         root_state_tensor = self.encoder.encode(game_state)
-    #         self.collector.record_decision(root_state_tensor, visit_counts)
-
-    #     selected_move_idx = max(root.move_idxes(), key=root.visit_count)
-    #     return self.encoder.decode_move_index(selected_move_idx), visit_counts
 
     def select_move(self, game_state):
         root = self.create_node(game_state)

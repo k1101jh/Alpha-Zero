@@ -2,8 +2,8 @@
 import copy
 
 from codes.games.board import Board
-from codes.types import Player
-from codes.types import Point
+from codes.game_types import Player
+from codes.game_types import Point
 from codes import utils
 
 

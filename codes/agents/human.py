@@ -1,7 +1,5 @@
-import queue
-
 from codes.agents.abstract_agent import Agent
-from codes.types import Move
+from codes.game_types import Move
 from codes.utils import point_from_coords
 
 

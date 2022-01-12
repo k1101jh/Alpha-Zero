@@ -12,8 +12,8 @@ from codes.networks.alpha_zero import AlphaZeroModel
 from codes.experience import ExperienceCollector
 from codes.experience import ExperienceDataset
 from codes.ui.cui import CUI
-from codes.types import board_size_dict
-from codes.types import Player
+from codes.game_types import board_size_dict
+from codes.game_types import Player
 from codes import utils
 
 

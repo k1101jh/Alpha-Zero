@@ -1,14 +1,14 @@
 import sys
 
-from codes.types import Player
-from codes.types import Move
-from codes.types import Point
+from codes.game_types import Player
+from codes.game_types import Move
+from codes.game_types import Point
 from codes.agents.human import Human
 from codes.agents.zero_agent import ZeroAgent
 from codes.agents.mcts_agent import MCTSAgent
 from codes.encoders.zero_encoder import ZeroEncoder
 from codes import utils
-from codes import types
+from codes import game_types
 
 DEBUG = False
 
@@ -18,7 +18,7 @@ class TestMCTS:
         game_type = "MiniOmok"
         rule_type = "FreeRule"
 
-        self.board_size = types.board_size_dict[game_type]
+        self.board_size = game_types.board_size_dict[game_type]
         agent_version = 35
         num_threads = 1
         white_agent_file_name = utils.get_agent_filename(game_type, agent_version)
