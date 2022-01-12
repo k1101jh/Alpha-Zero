@@ -62,7 +62,6 @@ class MCTSAgent(Agent):
             rounds_per_move (int, optional): [description]. Defaults to 300.
             num_threads_per_round (int, optional): [description]. Defaults to 12.
         """
-
         super().__init__()
         self.encoder = encoder
         self.num_simulated_games = 0

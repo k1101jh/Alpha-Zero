@@ -10,7 +10,6 @@ class Button:
         Args:
             text (string): Text to show on button.
         """
-
         self.__font = pygame.font.SysFont("freesans", 24, bold=True)
         self.__text = text
         self.__text_obj = self.__font.render(self.__text, True, pygame.Color("Black"))

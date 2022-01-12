@@ -9,7 +9,6 @@ class AbstractRule(metaclass=ABCMeta):
         Args:
             board_size (int): Size of board.
         """
-
         super().__init__()
         self.board_size = board_size
         self.list_dx = [-1, 1, -1, 1, 0, 0, 1, -1]

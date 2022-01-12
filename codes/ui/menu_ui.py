@@ -18,7 +18,6 @@ class MenuUI:
             size ([type]): Size of menu ui.
             pos ([type]): Position of menu ui.
         """
-
         self.size = size
         self.gui = gui
         self.pos = pos

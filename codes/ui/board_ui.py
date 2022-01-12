@@ -18,7 +18,6 @@ class BoardUI():
             board_size (int): Size of board.
             board_length (int): Length of board ui.
         """
-
         super().__init__()
         self.daemon = True
         self.board_size = board_size
@@ -54,7 +53,6 @@ class BoardUI():
         Args:
             board (Board): [description]
         """
-
         self.lock.acquire()
         self.stone_group.empty()
         for row in range(self.board_size):

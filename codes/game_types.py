@@ -48,7 +48,6 @@ class Move:
             point (Point, optional): move point. Defaults to None.
             is_pass (bool, optional): Passed turn with no move. Defaults to False.
         """
-
         assert (point is not None) ^ is_pass
         self.point = point
         self.is_play = (self.point is not None)

@@ -9,7 +9,6 @@ class ExperienceCollector:
             Collect status of game.
             Use with zero_agent.
         """
-
         self.states = []
         self.visit_counts = []
         self.rewards = []
@@ -63,7 +62,6 @@ class ExperienceDataset(Dataset):
             num_planes (int): Num of encoder planes.
             max_size (int): Max num of experiences.
         """
-
         self.board_size = board_size
         self.num_planes = num_planes
         self.max_size = max_size
@@ -81,7 +79,6 @@ class ExperienceDataset(Dataset):
         Returns:
             int: num of experiences.
         """
-
         return (self.rear - self.front + self.max_size) % self.max_size
 
     def __getitem__(self, idx):
@@ -93,7 +90,6 @@ class ExperienceDataset(Dataset):
         Returns:
             [type]: [description]
         """
-
         return [self.state_memory[idx],
                 self.visit_count_memory[idx] / self.visit_count_sum_memory[idx],
                 self.reward_memory[idx]]
