@@ -93,6 +93,7 @@ def is_on_grid(point, board_size):
     """
         check point is on grid
     """
+
     return 0 <= point.row < board_size and 0 <= point.col < board_size
 
 

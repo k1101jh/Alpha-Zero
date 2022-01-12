@@ -7,6 +7,15 @@ from codes.game_types import UIEvent
 class Game(threading.Thread):
     def __init__(self, game_type, rule_type,
                  players, event_queue=None):
+        """[summary]
+
+        Args:
+            game_type ([type]): [description]
+            rule_type ([type]): [description]
+            players (dictionary): Dict with two players.
+            event_queue ([type], optional): Event queue to communicate with UI. Defaults to None.
+        """
+
         super().__init__()
         self.daemon = True
 

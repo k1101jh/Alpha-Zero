@@ -26,6 +26,14 @@ MENU_POS = (BOARD_LENGTH, 0)
 
 class GUI:
     def __init__(self, game_type, rule_type, players):
+        """[summary]
+            Play game on GUI.
+        Args:
+            game_type ([type]): [description]
+            rule_type ([type]): [description]
+            players (dict): [description]
+        """
+
         self.event_queue = queue.Queue()
         self.mouse_input_queue = queue.Queue()
 

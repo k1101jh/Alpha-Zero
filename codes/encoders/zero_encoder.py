@@ -7,15 +7,23 @@ from codes.game_types import Move
 
 class ZeroEncoder():
     def __init__(self, board_size):
-        # 0. black stones
-        # 1. white stones
-        # 2. last stone
-        # 3. fill 1 if player is black. fill 0 if player is white
+        """[summary]
+            Plane channels:
+            0. black stones
+            1. white stones
+            2. last stone
+            3. fill 1 if player is black. fill 0 if player is white
+
+        Args:
+            board_size ([type]): [description]
+        """
+        self.name = "ZeroEncoder"
         self.board_size = board_size
         self.num_planes = 4
 
-    def name(self):
-        return "ZeroEncoder"
+    @classmethod
+    def name(cls):
+        return cls.name
 
     def shape(self):
         return self.num_planes, self.board_size, self.board_size
@@ -46,6 +54,7 @@ class ZeroEncoder():
         0 ~ N-1 : point on board
         N       : pass turn
         """
+
         if move.is_play:
             return (self.board_size * move.point.row + move.point.col)
         else:

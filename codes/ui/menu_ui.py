@@ -11,6 +11,14 @@ LARGE_FONT = pygame.font.SysFont('freesans', 32, bold=True)
 
 class MenuUI:
     def __init__(self, gui, size, pos):
+        """[summary]
+            Menu to show informations, buttons.
+        Args:
+            gui ([type]): [description]
+            size ([type]): Size of menu ui.
+            pos ([type]): Position of menu ui.
+        """
+
         self.size = size
         self.gui = gui
         self.pos = pos
@@ -32,7 +40,7 @@ class MenuUI:
 
         for idx, button in enumerate(self.buttons):
             button_x = self.pos[0] + idx * self.button_width
-            self.new_game_button.locate((button_x, self.pos[1]), self.button_size)
+            button.locate((button_x, self.pos[1]), self.button_size)
 
         # 버튼 초기화
         self.new_game_button.deactivate()
@@ -68,13 +76,15 @@ class MenuUI:
     def update_text(self, text):
         self.text_surf = BASIC_FONT.render(text, True, self.text_color)
 
-    def get_turn_text(self, next_player):
+    @classmethod
+    def get_turn_text(cls, next_player):
         if next_player is Player.black:
             return "Black Turn!"
         else:
             return "White Turn!"
 
-    def get_win_text(self, winner):
+    @classmethod
+    def get_win_text(cls, winner):
         if winner is Player.black:
             return "Black win!!"
         elif winner is Player.white:

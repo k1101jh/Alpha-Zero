@@ -14,6 +14,12 @@ from codes.game_types import Player
 
 class Branch:
     def __init__(self, prior):
+        """[summary]
+
+        Args:
+            prior (float): Prior of this branch.
+        """
+
         self.prior = prior
         self.visit_count = 0
         self.total_value = 0.0
@@ -21,6 +27,17 @@ class Branch:
 
 class TreeNode:
     def __init__(self, state, value, priors, parent, last_move_idx):
+        """[summary]
+            MCTS tree node.
+            Each node has game state.
+        Args:
+            state (GameState): Game state.
+            value (float): Value of this state.
+            priors (dict): Prior of branches. Key is index and value is prior.
+            parent (TreeNode): Parent node.
+            last_move_idx (int): Last move index.
+        """
+
         self.state = state
         self.value = value
         self.parent = parent
@@ -66,6 +83,19 @@ class TreeNode:
 
 class ZeroAgent(Agent):
     def __init__(self, encoder, model, device, c=5.0, rounds_per_move=300, num_threads_per_round=12, noise=True, lr=1e-3):
+        """[summary]
+            Use Monte Carlo Tree Search algorithm with DeepLearning.
+        Args:
+            encoder ([type]): [description]
+            model ([type]): [description]
+            device ([type]): [description]
+            c (float, optional): [description]. Defaults to 5.0.
+            rounds_per_move (int, optional): [description]. Defaults to 300.
+            num_threads_per_round (int, optional): [description]. Defaults to 12.
+            noise (bool, optional): [description]. Defaults to True.
+            lr (float, optional): [description]. Defaults to 1e-3.
+        """
+
         super().__init__()
         self.encoder = encoder
         self.device = device
@@ -86,6 +116,15 @@ class ZeroAgent(Agent):
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, 250, 0.1)
 
     def __deepcopy__(self, memodict={}):
+        """[summary]
+
+        Args:
+            memodict (dict, optional): [description]. Defaults to {}.
+
+        Returns:
+            ZeroAgent: Copied ZeroAgent.
+        """
+
         copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.rounds_per_move, self.num_threads_per_round, self.noise)
         copy_object.set_collector(self.collector)
         copy_object.num_simulated_games = self.num_simulated_games
@@ -95,9 +134,8 @@ class ZeroAgent(Agent):
 
         return copy_object
 
-    def set_device(self, device):
-        self.device = torch.device(device)
-        self.model = self.model.to(self.device)
+    def set_noise(self, noise):
+        self.noise = noise
 
     def set_collector(self, collector):
         self.collector = collector
@@ -166,7 +204,7 @@ class ZeroAgent(Agent):
         remain_rounds = self.rounds_per_move
 
         # 게임 진행
-        for remain_round in tqdm(range(remain_rounds)):
+        for _ in tqdm(range(remain_rounds)):
             first_move_idx_candidates = self.select_branches(root, self.num_threads_per_round)
             threads = []
             thread_lock = threading.Lock()
@@ -288,7 +326,7 @@ class ZeroAgent(Agent):
         torch.save(state, pthfile)
 
     @staticmethod
-    def load_agent(pthfilename, device, num_threads_per_round):
+    def load_agent(pthfilename, device, num_threads_per_round, noise=False):
         loaded_file = torch.load(pthfilename, map_location='cuda:0')
         encoder = loaded_file['encoder']
         model = loaded_file['model']
@@ -300,7 +338,8 @@ class ZeroAgent(Agent):
 
         loaded_agent = ZeroAgent(encoder, model, device,
                                  rounds_per_move=rounds_per_move,
-                                 num_threads_per_round=num_threads_per_round)
+                                 num_threads_per_round=num_threads_per_round,
+                                 noise=noise)
         loaded_agent.optimizer.load_state_dict(optimizer_state_dict)
         loaded_agent.scheduler.load_state_dict(scheduler_state_dict)
         loaded_agent.set_agent_data(epoch=epoch, num_simulated_games=num_simulated_games)

@@ -1,5 +1,3 @@
-import argparse
-
 from codes.game_types import Player
 from codes.agents.human import Human
 from codes.agents.zero_agent import ZeroAgent
@@ -16,9 +14,8 @@ if __name__ == '__main__':
         agent_version = 136
         num_threads = 2
         white_agent_file_name = get_agent_filename(game_type, agent_version, postfix='T1/')
-        loaded_agent = ZeroAgent.load_agent(white_agent_file_name, 'cuda:1', num_threads)
-        loaded_agent.noise = False
-        loaded_agent.rounds_per_move = 400
+        loaded_agent = ZeroAgent.load_agent(white_agent_file_name, 'cuda:0', num_threads, False)
+        loaded_agent.rounds_per_move = 200
 
     players = {
         Player.black: Human(),

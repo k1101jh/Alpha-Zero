@@ -55,6 +55,14 @@ class TreeNode:
 
 class MCTSAgent(Agent):
     def __init__(self, encoder, rounds_per_move=300, num_threads_per_round=12):
+        """[summary]
+            Use Monte Carlo Tree Search(MCTS) Algorithm to select move.
+        Args:
+            encoder ([type]): [description]
+            rounds_per_move (int, optional): [description]. Defaults to 300.
+            num_threads_per_round (int, optional): [description]. Defaults to 12.
+        """
+
         super().__init__()
         self.encoder = encoder
         self.num_simulated_games = 0
@@ -64,7 +72,8 @@ class MCTSAgent(Agent):
     def add_num_simulated_games(self, num):
         self.num_simulated_games += num
 
-    def create_node(self, state, move_idx=None, parent=None):
+    @classmethod
+    def create_node(cls, state, move_idx=None, parent=None):
         new_node = TreeNode(state, parent)
 
         if parent is not None:
@@ -72,10 +81,12 @@ class MCTSAgent(Agent):
 
         return new_node
 
-    def select_branch(self, node):
+    @classmethod
+    def select_branch(cls, node):
         return random.choice(node.move_idxes())
 
-    def select_branches(self, node, num):
+    @classmethod
+    def select_branches(cls, node, num):
         return random.sample(node.move_idxes(), num)
 
     def select_move(self, game_state):

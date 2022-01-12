@@ -1,12 +1,16 @@
-"""
-reference: https://pythonprogramming.altervista.org/buttons-in-pygame/
-"""
+# reference: https://pythonprogramming.altervista.org/buttons-in-pygame/
 
 import pygame
 
 
 class Button:
     def __init__(self, text):
+        """[summary]
+
+        Args:
+            text (string): Text to show on button.
+        """
+
         self.__font = pygame.font.SysFont("freesans", 24, bold=True)
         self.__text = text
         self.__text_obj = self.__font.render(self.__text, True, pygame.Color("Black"))
