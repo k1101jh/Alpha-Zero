@@ -21,7 +21,6 @@ class Board:
 
     def __deepcopy__(self, memo):
         """[summary]
-
         Args:
             memodict (dict, optional): [description]. Defaults to {}.
 
@@ -36,14 +35,24 @@ class Board:
         return copy_object
 
     def place_stone(self, player, point):
-        """            put stone on grid.
+        """[summary]
+            put stone on grid.
+        Args:
+            player (Player): [description]
+            point (Point): [description]
         """
         self.grid[point] = player.value
         self.player_num_stones[player] += 1
         self.num_empty_points -= 1
 
     def get(self, point):
-        """            get stone on grid.
+        """[summary]
+            get stone on grid.
+        Args:
+            point (Point): [description]
+
+        Returns:
+            [type]: [description]
         """
         return self.grid[point]
 

@@ -6,7 +6,6 @@ from codes import utils
 class TicTacToeRule(AbstractRule):
     def __init__(self, board_size):
         """[summary]
-
         Args:
             board_size (int): Size of board.
         """
@@ -34,7 +33,7 @@ class TicTacToeRule(AbstractRule):
                     break
         return cnt
 
-    def check_game_over(self, game_state) -> bool:
+    def check_game_over(self, game_state):
         game_over = False
         if game_state.last_move.is_play:
             game_over = self.is_three(game_state, game_state.last_move.point)

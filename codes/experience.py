@@ -83,7 +83,6 @@ class ExperienceDataset(Dataset):
 
     def __getitem__(self, idx):
         """[summary]
-
         Args:
             idx (int): [description]
 

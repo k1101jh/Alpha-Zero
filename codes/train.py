@@ -202,8 +202,8 @@ def evaluate_bot(game_type, rule_type, agent, prev_agent):
         eval_agent_color = eval_agent_color.other
 
     # calc win rate, draw rate
-    win_rate = num_win / NUM_TEST_GAMES_HALF
-    draw_rate = num_draw / NUM_TEST_GAMES_HALF
+    win_rate = num_win / (NUM_TEST_GAMES_HALF * 2)
+    draw_rate = num_draw / (NUM_TEST_GAMES_HALF * 2)
     print('Win:', num_win, ' Lose:', num_lose, ' Draw:', num_draw, ' Win Rate:', win_rate)
 
     return win_rate, draw_rate

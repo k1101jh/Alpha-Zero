@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 import copy
+from copy import deepcopy
 
 from codes.games.board import Board
 from codes.game_types import Player
@@ -10,7 +11,6 @@ from codes import utils
 class GameState:
     def __init__(self, rule, board, player, last_move):
         """[summary]
-
         Args:
             rule ([type]): [description]
             board (Board): Current board.
@@ -26,22 +26,32 @@ class GameState:
 
     def __deepcopy__(self, memo):
         """[summary]
-
         Args:
             memodict (dict, optional): [description]. Defaults to {}.
 
         Returns:
             GameState: Copied GameState.
         """
-        copy_object = GameState(self.rule, self.board, self.player, self.last_move)
-        copy_object.game_over = self.game_over
-        copy_object.winner = self.winner
+        deepcopy_method = self.__deepcopy__
+        self.__deepcopy__ = None
+        cp = deepcopy(self, memo)
+        self.__deepcopy__ = deepcopy_method
+        cp.__deepcopy__ = deepcopy_method
+        # copy_object = GameState(self.rule, self.board, self.player, self.last_move)
+        # copy_object.game_over = self.game_over
+        # copy_object.winner = self.winner
 
-        return copy_object
+        return cp
 
     def apply_move(self, move):
-        """            Apply move on board.
+        """[summary]
+            Apply move on board.
             Move can't be pass.
+        Args:
+            move (Move): [description]
+
+        Returns:
+            GameState: Next GameState which move is applied.
         """
         next_board = copy.deepcopy(self.board)
         next_board.place_stone(self.player, move.point)
@@ -52,7 +62,13 @@ class GameState:
         self.player = self.player.other
 
     def check_valid_move(self, move):
-        """            If point on board is 0, return True.
+        """[summary]
+            If point on board is 0, return True.
+        Args:
+            move ([type]): [description]
+
+        Returns:
+            bool: Is move valid.
         """
         return utils.is_on_grid(move.point, self.board.board_size) and self.board.get(move.point) == 0
 

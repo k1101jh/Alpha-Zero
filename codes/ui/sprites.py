@@ -12,7 +12,6 @@ PLAYER_COLOR = {
 class StoneSprite(pygame.sprite.Sprite):
     def __init__(self, group, player, pos, size):
         """[summary]
-
         Args:
             group ([type]): [description]
             player ([type]): [description]
@@ -37,7 +36,6 @@ class StoneSprite(pygame.sprite.Sprite):
 class VisitCountSprite(pygame.sprite.Sprite):
     def __init__(self, group, pos, size, text):
         """[summary]
-
         Args:
             group ([type]): [description]
             pos ([type]): [description]

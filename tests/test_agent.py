@@ -11,8 +11,6 @@ DEBUG = False
 
 class TestMCTS:
     def __init__(self):
-        """[summary]
-        """
         game_type = "MiniOmok"
         rule_type = "FreeRule"
 

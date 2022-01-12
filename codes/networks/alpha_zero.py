@@ -57,7 +57,6 @@ class ConvBnReluBlock(nn.Module):
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels):
         """[summary]
-
         Args:
             in_channels (int): Num of input channels.
         """
