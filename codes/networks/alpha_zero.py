@@ -4,7 +4,7 @@ import torch.nn as nn
 
 
 class AlphaZeroModel(nn.Module):
-    def __init__(self, in_channels, mid_channels=128, num_blocks=5, board_size=15):
+    def __init__(self, in_channels, mid_channels=128, num_blocks=7, board_size=15):
         super().__init__()
         self.conv = ConvBnReluBlock(in_channels, mid_channels)
         self.layers = self._make_layer(mid_channels, num_blocks)

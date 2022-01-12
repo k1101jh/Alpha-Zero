@@ -10,6 +10,7 @@ from codes.types import Move
 from codes.ui.board_ui import BoardUI
 from codes.ui.menu_ui import MenuUI
 from codes import utils
+from codes.types import UIEvent
 
 
 FPS = 30
@@ -26,21 +27,20 @@ MENU_POS = (BOARD_LENGTH, 0)
 
 
 class GUI:
-    def __init__(self, game_state_constructor, rule_constructor, players):
-        self.board_queue = queue.Queue()
-        self.move_queue = queue.Queue()
-        self.visit_count_queue = queue.Queue()
+    def __init__(self, game_type, rule_type, players):
+        self.event_queue = queue.Queue()
         self.mouse_input_queue = queue.Queue()
-        self.lock = threading.Lock()
 
-        players[Player.black].set_input_queue(self.mouse_input_queue)
-        players[Player.white].set_input_queue(self.mouse_input_queue)
-        self.game = Game(game_state_constructor,
-                         rule_constructor,
+        self.game_type = game_type
+        self.rule_type = rule_type
+        self.players = players
+
+        self.players[Player.black].set_input_queue(self.mouse_input_queue)
+        self.players[Player.white].set_input_queue(self.mouse_input_queue)
+        self.game = Game(game_type,
+                         rule_type,
                          players,
-                         self.board_queue,
-                         self.move_queue,
-                         self.visit_count_queue)
+                         self.event_queue)
         self.board_size = self.game.get_board_size()
 
         # pygame setting
@@ -49,19 +49,23 @@ class GUI:
         pygame.event.set_allowed([pygame.QUIT,
                                   pygame.MOUSEBUTTONUP])
 
-        self.menu_ui = MenuUI(self.game, MENU_REC_SIZE, MENU_POS)
+        self.menu_ui = MenuUI(self, MENU_REC_SIZE, MENU_POS)
         self.board_ui = BoardUI(self.board_size,
-                                BOARD_LENGTH,
-                                self.board_queue,
-                                self.move_queue,
-                                self.visit_count_queue, self.lock)
+                                BOARD_LENGTH)
 
         self.clock = pygame.time.Clock()
         self.display_surf = pygame.display.set_mode(WINDOW_REC_SIZE)
 
+    def new_game_start(self):
+        self.game = Game(self.game_type,
+                         self.rule_type,
+                         self.players,
+                         self.event_queue)
+        self.mouse_input_queue.queue.clear()
+        self.game.start()
+
     def run(self):
         self.game.start()
-        self.board_ui.start()
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -69,17 +73,30 @@ class GUI:
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     mouse_coord = pygame.mouse.get_pos()
+                    # 메뉴 버튼이 눌렸는지 확인
                     self.menu_ui.check_button_clicked(mouse_coord)
                     move = Move(self.board_ui.point_from_mouse_coords(mouse_coord))
+                    # 마우스로 돌을 놓는 경우
                     if utils.is_on_grid(move.point, self.board_size):
                         self.mouse_input_queue.put(move)
-            self.lock.acquire()
-            self.render()
-            self.lock.release()
 
-    def queue_task_done(self):
-        self.move_queue.task_done()
-        self.board_queue.task_done()
+            # 메뉴에 현재 플레이어 표시
+            game_state = self.game.get_game_state()
+            if game_state.get_winner() is None:
+                self.menu_ui.update_turn(game_state.player)
+
+            # 이벤트 처리
+            if(not self.event_queue.empty()):
+                event, val = self.event_queue.get()
+                if event == UIEvent.BOARD:
+                    self.board_ui.set_stone_sprite(val)
+                elif event == UIEvent.VISIT_COUNTS:
+                    self.board_ui.set_visit_count_sprite(val)
+                elif event == UIEvent.GAME_OVER:
+                    self.menu_ui.game_over(val)
+
+                self.event_queue.task_done()
+            self.render()
 
     def _render_menu(self):
         self.menu_ui.render()
@@ -94,3 +111,6 @@ class GUI:
         self._render_board()
         pygame.display.update()
         self.clock.tick(FPS)
+
+    def get_game(self):
+        return self.game

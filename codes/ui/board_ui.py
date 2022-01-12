@@ -5,13 +5,13 @@ from codes.types import Player
 from codes.types import Point
 from codes.ui.sprites import StoneSprite
 from codes.ui.sprites import VisitCountSprite
-from codes import utils
+
 
 BOARD_COLOR = (255, 165, 0)
 
 
-class BoardUI(threading.Thread):
-    def __init__(self, board_size, board_length, board_queue, move_queue, visit_count_queue, lock):
+class BoardUI():
+    def __init__(self, board_size, board_length):
         super().__init__()
         self.daemon = True
         self.board_size = board_size
@@ -28,22 +28,7 @@ class BoardUI(threading.Thread):
         self.surface = pygame.Surface(self.board_rec_size)
         self.surface.fill(BOARD_COLOR)
 
-        self.board_queue = board_queue
-        self.move_queue = move_queue
-        self.visit_count_queue = visit_count_queue
-        self.lock = lock
-
-    def run(self):
-        while True:
-            board = self.board_queue.get()
-            next_move = self.move_queue.get()
-            visit_counts = self.visit_count_queue.get()
-            self.lock.acquire()
-            if visit_counts is not None:
-                self.set_visit_count_sprite(visit_counts)
-            self.set_stone_sprite(board)
-            self.queue_task_done()
-            self.lock.release()
+        self.lock = threading.Lock()
 
     def get_stone_coord(self, stone_point: Point):
         return [stone_point.col * self.line_interval + self.line_interval,
@@ -57,6 +42,12 @@ class BoardUI(threading.Thread):
         return point
 
     def set_stone_sprite(self, board):
+        """[summary]
+            Put stones on board ui.
+        Args:
+            board (Board): [description]
+        """
+        self.lock.acquire()
         self.stone_group.empty()
         for row in range(self.board_size):
             for col in range(self.board_size):
@@ -68,19 +59,25 @@ class BoardUI(threading.Thread):
                         StoneSprite(self.stone_group, Player.black, stone_coord, self.line_interval)
                     else:
                         StoneSprite(self.stone_group, Player.white, stone_coord, self.line_interval)
+        self.lock.release()
 
     def set_visit_count_sprite(self, visit_counts):
+        self.lock.acquire()
         self.visit_count_group.empty()
-        for row in range(self.board_size):
-            for col in range(self.board_size):
-                counter_coord = self.get_stone_coord(Point(row, col))
-                VisitCountSprite(self.visit_count_group, counter_coord, self.line_interval, str(visit_counts[int(row*self.board_size + col)]))
+        if visit_counts is not None:
+            for row in range(self.board_size):
+                for col in range(self.board_size):
+                    counter_coord = self.get_stone_coord(Point(row, col))
+                    VisitCountSprite(self.visit_count_group, counter_coord, self.line_interval, str(visit_counts[int(row*self.board_size + col)]))
+        self.lock.release()
 
     def render(self):
+        self.lock.acquire()
         self.render_board()
         self.render_stone()
         if len(self.visit_count_group) > 0:
             self.render_visit_counts()
+        self.lock.release()
 
     def render_board(self):
         self.surface.fill(BOARD_COLOR)
@@ -104,8 +101,3 @@ class BoardUI(threading.Thread):
         self.visit_count_surface.fill((0, 0, 0, 0))
         self.visit_count_group.draw(self.visit_count_surface)
         self.surface.blit(self.visit_count_surface, (0, 0))
-
-    def queue_task_done(self):
-        self.move_queue.task_done()
-        self.board_queue.task_done()
-        self.visit_count_queue.task_done()

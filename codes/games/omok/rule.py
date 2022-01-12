@@ -24,7 +24,7 @@ class FreeRule(AbstractRule):
                     break
         return cnt
 
-    def check_game_over(self, game_state) -> bool:
+    def check_game_over(self, game_state):
         game_over = False
         if game_state.last_move.is_play:
             game_over = self.is_five(game_state, game_state.last_move.point)

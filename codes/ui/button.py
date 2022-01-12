@@ -6,16 +6,21 @@ import pygame
 
 
 class Button:
-    def __init__(self, text, *game_functions):
+    def __init__(self, text):
         self.__font = pygame.font.SysFont("freesans", 24, bold=True)
         self.__text = text
         self.__text_obj = self.__font.render(self.__text, True, pygame.Color("Black"))
         self.pos = None
         self.size = None
-        self.game_functions = game_functions
+        self.game_functions = None
+        self.rect = None
+        self.surface = None
         self.__activated = True
 
         self.background_color = (255, 255, 255)
+
+    def set_functions(self, *functions):
+        self.game_functions = functions
 
     def locate(self, pos, size=None):
         self.pos = pos
@@ -40,8 +45,9 @@ class Button:
         if self.__activated:
             if self.rect.collidepoint(mouse_coord[0], mouse_coord[1]):
                 print("clicked!")
-                for function in self.game_functions:
-                    function()
+                if(self.game_functions is not None):
+                    for function in self.game_functions:
+                        function()
 
     def activate(self):
         self.__text_obj = self.__font.render(self.__text, True, pygame.Color("Black"))

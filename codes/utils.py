@@ -38,13 +38,16 @@ def print_turn(game_state):
     sys.stdout.flush()
 
 
-def print_move(player, move):
-    if move.is_pass:
-        move_str = 'passes'
-    else:
-        move_str = '%s%d' % (COLS[move.point.col], move.point.row + 1)
-    print('%s %s' % (player, move_str))
-    sys.stdout.flush()
+def print_move(player_move):
+    if player_move is not None:
+        player = player_move[0]
+        move = player_move[1]
+        if move.is_pass:
+            move_str = 'passes'
+        else:
+            move_str = '%s%d' % (COLS[move.point.col], move.point.row + 1)
+        print('%s %s' % (player, move_str))
+        sys.stdout.flush()
 
 
 def print_board(board):

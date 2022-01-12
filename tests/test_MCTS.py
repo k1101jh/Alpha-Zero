@@ -15,12 +15,14 @@ DEBUG = False
 
 class TestMCTS:
     def __init__(self):
-        game_name = "Omok"
-        rule_name = "FreeRule"
-        agent_version = 16
+        game_type = "MiniOmok"
+        rule_type = "FreeRule"
+
+        self.board_size = types.board_size_dict[game_type]
+        agent_version = 35
         num_threads = 1
-        white_agent_file_name = utils.get_agent_filename(game_name, agent_version)
-        # encoder = ZeroEncoder(types.board_size_dict[game_name])
+        white_agent_file_name = utils.get_agent_filename(game_type, agent_version)
+        # encoder = ZeroEncoder()
         # loaded_agent = MCTSAgent(encoder)
         loaded_agent = ZeroAgent.load_agent(white_agent_file_name, 'cuda:1', num_threads)
         self.players = {
@@ -32,8 +34,8 @@ class TestMCTS:
         loaded_agent.noise = False
         loaded_agent.rounds_per_move = 500
 
-        self.game_state_constructor = utils.get_game_state_constructor(game_name)
-        self.rule_constructor = utils.get_rule_constructor(game_name, rule_name)
+        self.game_state_constructor = utils.get_game_state_constructor(game_type)
+        self.rule_constructor = utils.get_rule_constructor(game_type, rule_type)
 
         self.black_moves = [[4, 3], [4, 4], [4, 5], [4, 6]]
         self.white_moves = [[0, 0], [0, 2], [0, 4], [0, 6]]
@@ -48,7 +50,7 @@ class TestMCTS:
 
     def run(self):
         if(self.test_cases[0]):
-            game_state = self.game_state_constructor.new_game(self.rule_constructor)
+            game_state = self.game_state_constructor.new_game(self.board_size, self.rule_constructor)
 
             for black_move, white_move in zip(self.black_moves, self.white_moves):
                 move = Move(Point(*black_move))
@@ -70,7 +72,7 @@ class TestMCTS:
 
         # test 2
         if(self.test_cases[1]):
-            game_state = self.game_state_constructor.new_game(self.rule_constructor)
+            game_state = self.game_state_constructor.new_game(self.board_size, self.rule_constructor)
 
             for black_move, white_move in zip(self.black_moves2, self.white_moves2):
                 move = Move(Point(*black_move))
@@ -91,7 +93,7 @@ class TestMCTS:
 
         # test 3
         if(self.test_cases[2]):
-            game_state = self.game_state_constructor.new_game(self.rule_constructor)
+            game_state = self.game_state_constructor.new_game(self.board_size, self.rule_constructor)
 
             for black_move, white_move in zip(self.black_moves3, self.white_moves3):
                 move = Move(Point(*black_move))

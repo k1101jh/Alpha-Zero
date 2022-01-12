@@ -1,13 +1,9 @@
-# 참고한 코드: https://github.com/maxpumperla/deep_learning_and_the_game_of_go/blob/master/code/dlgo/zero/agent.py
 import numpy as np
-import copy
-import heapq
 import threading
 import random
 
 from codes.agents.abstract_agent import Agent
 from codes.types import Player
-from codes import utils
 
 lock = threading.Lock()
 

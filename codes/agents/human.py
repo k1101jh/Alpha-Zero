@@ -1,3 +1,5 @@
+import queue
+
 from codes.agents.abstract_agent import Agent
 from codes.types import Move
 from codes.utils import point_from_coords
@@ -24,7 +26,7 @@ class Human(Agent):
                     continue
         else:
             while True:
-                self.input_queue.empty()
+                self.input_queue.queue.clear()
                 move = self.input_queue.get()
                 self.input_queue.task_done()
                 if game_state.check_valid_move(move):

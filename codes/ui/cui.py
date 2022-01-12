@@ -1,6 +1,4 @@
-import sys
 import queue
-import time
 
 from codes.games.game import Game
 from codes.utils import print_turn
@@ -8,41 +6,33 @@ from codes.utils import print_board
 from codes.utils import print_move
 from codes.utils import print_visit_count
 from codes.utils import print_winner
+from codes.types import UIEvent
 
 
 class CUI:
-    def __init__(self, game_state_constructor, rule_constructor, players):
-        self.board_queue = queue.Queue()
-        self.move_queue = queue.Queue()
-        self.visit_count_queue = queue.Queue()
-        self.game = Game(game_state_constructor, rule_constructor, players, self.board_queue, self.move_queue, self.visit_count_queue)
+    def __init__(self, game_type, rule_type, players):
+        self.event_queue = queue.Queue()
+        self.game = Game(game_type, rule_type, players, self.event_queue)
         self.board_size = self.game.get_board_size()
 
     def run(self):
-        game_state = self.game.get_game_state()
         self.game.start()
+        game_over = False
 
-        while not game_state.game_over:
-            print_turn(game_state)
-            board = self.board_queue.get()
-            player, move = self.move_queue.get()
+        while not game_over:
+            event, val = self.event_queue.get()
+            if event == UIEvent.BOARD:
+                print_board(val)
+            elif event == UIEvent.VISIT_COUNTS:
+                print_visit_count(val)
+            elif event == UIEvent.LAST_MOVE:
+                print_move(val)
+                print_turn(self.game.get_game_state())
+            elif event == UIEvent.GAME_OVER:
+                print_winner(val)
+                game_over = True
 
-            # print visit count
-            visit_counts = self.visit_count_queue.get()
-            if visit_counts is not None:
-                print_visit_count(visit_counts)
-            #
+            self.event_queue.task_done()
 
-            if move is not None:
-                print_move(player, move)
-            print_board(board)
-            game_state = self.game.get_game_state()
-            self.queue_task_done()
-
-        winner = game_state.winner
-        print_winner(winner)
-
-    def queue_task_done(self):
-        self.move_queue.task_done()
-        self.board_queue.task_done()
-        self.visit_count_queue.task_done()
+    def get_game(self):
+        return self.game
