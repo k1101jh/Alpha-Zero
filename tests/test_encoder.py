@@ -16,7 +16,6 @@ class TestEncoder():
             1. white stones
             2. last move
             3. fill 1 if player is black. fill 0 if player is white
-
         Args:
             board_size (int): Size of board.
         """
@@ -50,10 +49,17 @@ class TestEncoder():
         return encoded_game_state
 
     def encode_move(self, move):
-        """        return move idx on flatten board
-        if board_size is N,
-        0 ~ N-1 : point on board
-        N       : pass turn
+        """[summary]
+            Encode Move object to move index.
+            If board_size is N,
+            0 ~ N-1 : point on board
+            N       : pass turn
+
+        Args:
+            move (Move): [description]
+
+        Returns:
+            int: Move index.
         """
         if move.is_play:
             return (self.board_size * move.point.row + move.point.col)

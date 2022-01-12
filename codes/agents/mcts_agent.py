@@ -5,8 +5,6 @@ import random
 from codes.agents.abstract_agent import Agent
 from codes.game_types import Player
 
-lock = threading.Lock()
-
 
 class TreeNode:
     def __init__(self, state, parent):
@@ -45,13 +43,6 @@ class TreeNode:
         else:
             return 0.0
 
-    def update_recursive(self, value):
-        lock.acquire()
-        self.record_visit(value)
-        lock.release()
-        if self.parent is not None:
-            self.parent.update_recursive(value)
-
 
 class MCTSAgent(Agent):
     def __init__(self, encoder, rounds_per_move=300, num_threads_per_round=12):
@@ -67,6 +58,7 @@ class MCTSAgent(Agent):
         self.num_simulated_games = 0
         self.num_threads_per_round = num_threads_per_round
         self.rounds_per_move = rounds_per_move
+        self.lock = threading.Lock()
 
     def add_num_simulated_games(self, num):
         self.num_simulated_games += num
@@ -134,28 +126,14 @@ class MCTSAgent(Agent):
         elif node.state.winner == root.state.player:
             value = 1
         else:
-            value = 0
+            value = -1
 
-        # node = node.parent
-
-        # print('player: ', child_node.state.player)
-        # print('value: ', child_node.value)
-        # utils.print_board(child_node.state.board)
-
-        node.update_recursive(value)
-        # while node is not None:
-        #     lock.acquire()
-        #     node.record_visit(move_idx, value)
-        #     lock.release()
-
-        #     total_n = node.total_visit_count
-        #     q = node.expected_value(move_idx)
-        #     p = node.prior(move_idx)
-        #     n = node.visit_count(move_idx)
-        #     print('player: ', node.state.player)
-        #     print('value: ', value)
-        #     print('expect value: ', q + self.c * p * np.sqrt(total_n) / (n + 1))
-
-        #     move_idx = node.last_move_idx
-        #     node = node.parent
-        #     value = -1 * value
+        node = node.parent
+        move_idx = next_move_idx
+        self.lock.acquire()
+        while node is not None:
+            node.record_visit(move_idx, value)
+            move_idx = node.last_move_idx
+            node = node.parent
+            value = -1 * value
+        self.lock.release()

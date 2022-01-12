@@ -13,7 +13,6 @@ BOARD_COLOR = (255, 165, 0)
 class BoardUI():
     def __init__(self, board_size, board_length):
         """[summary]
-
         Args:
             board_size (int): Size of board.
             board_length (int): Length of board ui.

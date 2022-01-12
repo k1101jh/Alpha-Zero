@@ -90,7 +90,14 @@ def point_from_coords(coords):
 
 
 def is_on_grid(point, board_size):
-    """        check point is on grid
+    """[summary]
+        check point is on grid
+    Args:
+        point (Point): [description]
+        board_size (int): Size of board.
+
+    Returns:
+        bool: Is point on board.
     """
     return 0 <= point.row < board_size and 0 <= point.col < board_size
 

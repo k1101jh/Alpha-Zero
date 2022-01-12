@@ -10,7 +10,6 @@ from codes import utils
 class GameState:
     def __init__(self, rule, board, player, last_move):
         """[summary]
-
         Args:
             rule (AbstractRule): [description]
             board (Board): Game board.
@@ -26,7 +25,6 @@ class GameState:
 
     def __deepcopy__(self, memo):
         """[summary]
-
         Args:
             memodict (dict, optional): [description]. Defaults to {}.
 
@@ -40,8 +38,14 @@ class GameState:
         return copy_object
 
     def apply_move(self, move):
-        """        apply move on board
-        move can't be pass
+        """[summary]
+            Apply move on board.
+            Move can't be pass.
+        Args:
+            move (Move): [description]
+
+        Returns:
+            GameState: Next GameState which move is applied.
         """
         next_board = copy.deepcopy(self.board)
         next_board.place_stone(self.player, move.point)
@@ -52,7 +56,13 @@ class GameState:
         self.player = self.player.other
 
     def check_valid_move(self, move):
-        """        if point on board is 0, return True
+        """[summary]
+            If point on board is 0, return True.
+        Args:
+            move ([type]): [description]
+
+        Returns:
+            bool: Is move valid.
         """
         return utils.is_on_grid(move.point, self.board.board_size) and self.board.get(move.point) == 0
 

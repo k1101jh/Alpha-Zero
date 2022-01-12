@@ -15,7 +15,6 @@ from codes.game_types import Player
 class Branch:
     def __init__(self, prior):
         """[summary]
-
         Args:
             prior (float): Prior of this branch.
         """
@@ -114,7 +113,6 @@ class ZeroAgent(Agent):
 
     def __deepcopy__(self, memo):
         """[summary]
-
         Args:
             memodict (dict, optional): [description]. Defaults to {}.
 

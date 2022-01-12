@@ -5,7 +5,6 @@ from abc import abstractmethod
 class AbstractRule(metaclass=ABCMeta):
     def __init__(self, board_size):
         """[summary]
-
         Args:
             board_size (int): Size of board.
         """
@@ -18,5 +17,5 @@ class AbstractRule(metaclass=ABCMeta):
         return self.list_dx[direction], self.list_dy[direction]
 
     @abstractmethod
-    def check_game_over(self, game_state) -> bool:
+    def check_game_over(self, game_state):
         pass

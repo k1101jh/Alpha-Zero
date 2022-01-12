@@ -6,7 +6,6 @@ from codes import utils
 class FreeRule(AbstractRule):
     def __init__(self, board_size):
         """[summary]
-
         Args:
             board_size (int): Size of board.
         """

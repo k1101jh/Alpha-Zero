@@ -8,7 +8,6 @@ class Game(threading.Thread):
     def __init__(self, game_type, rule_type,
                  players, event_queue=None):
         """[summary]
-
         Args:
             game_type ([type]): [description]
             rule_type ([type]): [description]
