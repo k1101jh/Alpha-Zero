@@ -1,7 +1,7 @@
 # 참고한 코드: https://github.com/maxpumperla/deep_learning_and_the_game_of_go/blob/master/code/dlgo/zero/agent.py
 import numpy as np
-import copy
 import heapq
+import copy
 import threading
 import torch
 import torch.nn.functional as F
@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from codes.agents.abstract_agent import Agent
 from codes.types import Player
-from codes import utils
 
 
 class Branch:
@@ -75,7 +74,7 @@ class ZeroAgent(Agent):
         self.model = model.to(self.device)
         self.model.eval()
         self.noise = noise
-        self.alpha = 0.3
+        self.alpha = 0.2
         self.collector = None
 
         self.num_simulated_games = 0
@@ -85,7 +84,7 @@ class ZeroAgent(Agent):
 
         self.lr = lr
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, 100, 0.1)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, 250, 0.1)
 
     def __deepcopy__(self, memodict={}):
         copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.rounds_per_move, self.num_threads_per_round, self.noise)
@@ -104,7 +103,7 @@ class ZeroAgent(Agent):
     def set_collector(self, collector):
         self.collector = collector
 
-    def set_agent_meta_data(self, epoch=None, num_simulated_games=None):
+    def set_agent_data(self, epoch=None, num_simulated_games=None):
         if epoch is not None:
             self.epoch = epoch
 
@@ -117,8 +116,6 @@ class ZeroAgent(Agent):
     def create_node(self, state, move_idx=None, parent=None):
         with torch.no_grad():
             state_tensor = self.encoder.encode(state)
-            # print(state_tensor[2])
-            # print(state_tensor[3])
             model_input = torch.tensor([state_tensor], dtype=torch.float, device=self.device)
             prior, value = self.model(model_input)
             prior = prior[0].detach()
@@ -165,88 +162,52 @@ class ZeroAgent(Agent):
 
         return heapq.nlargest(num, node.move_idxes(), key=score_branch)
 
-    def select_move(self, game_state):
-        """
-        select move by mcts.
-        return move idx
-        """
-        root = self.create_node(game_state)
-        remain_rounds = self.rounds_per_move
-        # 게임 진행
-        for i in range(remain_rounds):
-            node = root
-            next_move_idx = self.select_branch(root)
-            while node.has_child(next_move_idx):
-                node = node.get_child(next_move_idx)
-                if not node.state.game_over:
-                    next_move_idx = self.select_branch(node)
-
-            # 노드가 없거나 승자가 나왔으면 게임 진행 종료
-            # 게임이 끝났으면
-            if node.state.game_over:
-                move_idx = node.last_move_idx
-                # 승자가 없으면(돌을 더 놓을 수 없으면)
-                if node.state.winner == Player.both:
-                    value = 0
-                else:
-                    value = 1
-
-                # print('player: ', node.state.player)
-                # print('!')
-                # utils.print_board(node.state.board)
-                node = node.parent
-            else:
-                next_move = self.encoder.decode_move_index(next_move_idx)
-                new_state = node.state.apply_move(next_move)
-                child_node = self.create_node(new_state, next_move_idx, parent=node)
-
-                move_idx = next_move_idx
-                if child_node.state.check_game_over():
-                    if child_node.state.winner == Player.both:
-                        value = 0
-                    else:
-                        value = 1
-                else:
-                    value = -1 * child_node.value.item()
-
-            while node is not None:
-                node.record_visit(move_idx, value)
-                move_idx = node.last_move_idx
-                node = node.parent
-                value = -1 * value
-
-        visit_counts = np.array([
-            root.visit_count(idx)
-            for idx in range(self.encoder.num_moves())
-        ])
-
-        if self.collector is not None:
-            root_state_tensor = self.encoder.encode(game_state)
-            self.collector.record_decision(root_state_tensor, visit_counts)
-
-        selected_move_idx = max(root.move_idxes(), key=root.visit_count)
-        return self.encoder.decode_move_index(selected_move_idx), visit_counts
-
     # def select_move(self, game_state):
+    #     """
+    #     select move by mcts.
+    #     return move idx
+    #     """
     #     root = self.create_node(game_state)
     #     remain_rounds = self.rounds_per_move
     #     # 게임 진행
-    #     while remain_rounds > 0:
-    #         # num_thread = min(random.randint(1, self.num_threads_per_round), remain_rounds)
-    #         num_thread = min(self.num_threads_per_round, remain_rounds)
+    #     for round in tqdm(range(remain_rounds)):
+    #         node = root
+    #         next_move_idx = self.select_branch(root)
+    #         while node.has_child(next_move_idx):
+    #             node = node.get_child(next_move_idx)
+    #             if not node.state.game_over:
+    #                 next_move_idx = self.select_branch(node)
 
-    #         first_move_idx_candidates = self.select_branches(root, num_thread)
-    #         threads = []
-    #         for first_move_idx_candidate in first_move_idx_candidates:
-    #             t = threading.Thread(target=self.simulate, args=(root, first_move_idx_candidate))
-    #             t.daemon = True
-    #             t.start()
-    #             threads.append(t)
+    #         # 노드가 없거나 승자가 나왔으면 게임 진행 종료
+    #         # 게임이 끝났으면
+    #         if node.state.game_over:
+    #             move_idx = node.last_move_idx
+    #             # 승자가 없으면(돌을 더 놓을 수 없으면)
+    #             if node.state.winner == Player.both:
+    #                 value = 0
+    #             else:
+    #                 value = 1
 
-    #         for t in threads:
-    #             t.join()
+    #             node = node.parent
+    #         else:
+    #             next_move = self.encoder.decode_move_index(next_move_idx)
+    #             new_state = node.state.apply_move(next_move)
+    #             child_node = self.create_node(new_state, next_move_idx, parent=node)
 
-    #         remain_rounds -= num_thread
+    #             move_idx = next_move_idx
+    #             if child_node.state.check_game_over():
+    #                 if child_node.state.winner == Player.both:
+    #                     value = 0
+    #                 else:
+    #                     value = 1
+    #             else:
+    #                 value = -1 * child_node.value.item()
+
+    #         while node is not None:
+    #             node.record_visit(move_idx, value)
+    #             move_idx = node.last_move_idx
+    #             node = node.parent
+    #             value = -1 * value
 
     #     visit_counts = np.array([
     #         root.visit_count(idx)
@@ -260,50 +221,75 @@ class ZeroAgent(Agent):
     #     selected_move_idx = max(root.move_idxes(), key=root.visit_count)
     #     return self.encoder.decode_move_index(selected_move_idx), visit_counts
 
-    # def simulate(self, root, next_move_idx):
-    #     node = root
-    #     while node.has_child(next_move_idx):
-    #         node = node.get_child(next_move_idx)
-    #         if not node.state.game_over:
-    #             next_move_idx = self.select_branch(node)
+    def select_move(self, game_state):
+        root = self.create_node(game_state)
+        remain_rounds = self.rounds_per_move
 
-    #     # 노드가 없거나 승자가 나왔으면 게임 진행 종료
-    #     # 게임이 끝났으면
-    #     if node.state.game_over:
-    #         move_idx = node.last_move_idx
-    #         # 승자가 없으면(돌을 더 놓을 수 없으면)
-    #         if node.state.winner == Player.both:
-    #             value = 0
-    #         else:
-    #             value = 1
+        # 게임 진행
+        for remain_round in tqdm(range(remain_rounds)):
+            first_move_idx_candidates = self.select_branches(root, self.num_threads_per_round)
+            threads = []
+            thread_lock = threading.Lock()
+            for first_move_idx_candidate in first_move_idx_candidates:
+                t = threading.Thread(target=self.simulate, args=(root, first_move_idx_candidate, thread_lock))
+                t.daemon = True
+                t.start()
+                threads.append(t)
 
-    #         # print('player: ', node.state.player)
-    #         # print('!')
-    #         # utils.print_board(node.state.board)
-    #         node = node.parent
-    #     else:
-    #         next_move = self.encoder.decode_move_index(next_move_idx)
-    #         new_state = node.state.apply_move(next_move)
-    #         child_node = self.create_node(new_state, next_move_idx, parent=node)
+            for t in threads:
+                t.join()
 
-    #         move_idx = next_move_idx
-    #         if child_node.state.check_game_over():
-    #             if child_node.state.winner == Player.both:
-    #                 value = 0
-    #             else:
-    #                 value = 1
-    #         else:
-    #             value = -1 * child_node.value.item()
+        visit_counts = np.array([
+            root.visit_count(idx)
+            for idx in range(self.encoder.num_moves())
+        ])
 
-    #         # print('player: ', child_node.state.player)
-    #         # print('value: ', child_node.value)
-    #         # utils.print_board(child_node.state.board)
+        if self.collector is not None:
+            root_state_tensor = self.encoder.encode(game_state)
+            self.collector.record_decision(root_state_tensor, visit_counts)
 
-    #     while node is not None:
-    #         node.record_visit(move_idx, value)
-    #         move_idx = node.last_move_idx
-    #         node = node.parent
-    #         value = -1 * value
+        selected_move_idx = max(root.move_idxes(), key=root.visit_count)
+        return self.encoder.decode_move_index(selected_move_idx), visit_counts
+
+    def simulate(self, root, next_move_idx, thread_lock):
+        node = root
+        while node.has_child(next_move_idx):
+            node = node.get_child(next_move_idx)
+            if not node.state.game_over:
+                next_move_idx = self.select_branch(node)
+
+        # 노드가 없거나 승자가 나왔으면 게임 진행 종료
+        # 게임이 끝났으면
+        if node.state.game_over:
+            move_idx = node.last_move_idx
+            # 승자가 없으면(돌을 더 놓을 수 없으면)
+            if node.state.winner == Player.both:
+                value = 0
+            else:
+                value = 1
+
+            node = node.parent
+        else:
+            next_move = self.encoder.decode_move_index(next_move_idx)
+            new_state = node.state.apply_move(next_move)
+            child_node = self.create_node(new_state, next_move_idx, parent=node)
+
+            move_idx = next_move_idx
+            if child_node.state.check_game_over():
+                if child_node.state.winner == Player.both:
+                    value = 0
+                else:
+                    value = 1
+            else:
+                value = -1 * child_node.value.item()
+
+        thread_lock.acquire()
+        while node is not None:
+            node.record_visit(move_idx, value)
+            move_idx = node.last_move_idx
+            node = node.parent
+            value = -1 * value
+        thread_lock.release()
 
     def train(self, dataset, batch_size):
         self.model.train()
@@ -363,7 +349,7 @@ class ZeroAgent(Agent):
 
     @staticmethod
     def load_agent(pthfilename, device, num_threads_per_round):
-        loaded_file = torch.load(pthfilename, map_location='cpu')
+        loaded_file = torch.load(pthfilename, map_location='cuda:0')
         encoder = loaded_file['encoder']
         model = loaded_file['model']
         rounds_per_move = loaded_file['rounds_per_move']
@@ -377,6 +363,6 @@ class ZeroAgent(Agent):
                                  num_threads_per_round=num_threads_per_round)
         loaded_agent.optimizer.load_state_dict(optimizer_state_dict)
         loaded_agent.scheduler.load_state_dict(scheduler_state_dict)
-        loaded_agent.set_agent_meta_data(epoch=epoch, num_simulated_games=num_simulated_games)
+        loaded_agent.set_agent_data(epoch=epoch, num_simulated_games=num_simulated_games)
         print("simulated %d games." % num_simulated_games)
         return loaded_agent

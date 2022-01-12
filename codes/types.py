@@ -4,6 +4,7 @@ from collections import namedtuple
 game_name_dict = {
     "TicTacToe": "tic_tac_toe",
     "Omok": "omok",
+    "MiniOmok": "omok",
 }
 
 board_size_dict = {
@@ -53,3 +54,10 @@ class Move:
     @classmethod
     def pass_turn(cls):
         return Move(is_pass=True)
+
+
+class UIEvent(enum.Enum):
+    BOARD = 1
+    VISIT_COUNTS = 2
+    LAST_MOVE = 3
+    GAME_OVER = 4

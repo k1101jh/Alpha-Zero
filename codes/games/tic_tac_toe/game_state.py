@@ -1,46 +1,10 @@
 # -*- coding:utf-8 -*-
-import numpy as np
 import copy
 
+from codes.games.board import Board
 from codes.types import Player
 from codes.types import Point
 from codes import utils
-
-
-class Board:
-    def __init__(self):
-        self.board_size = 3
-        self.grid = np.zeros((self.board_size, self.board_size), dtype=np.int8)
-        self.player_num_stones = {
-            Player.black: 0,
-            Player.white: 0,
-        }
-
-    def __deepcopy__(self, memodict={}):
-        copy_object = Board()
-        copy_object.grid = np.copy(self.grid)
-        copy_object.player_num_stones = utils.copy_dict(self.player_num_stones)
-
-        return copy_object
-
-    def place_stone(self, player, point):
-        """
-        put stone on grid
-        """
-        self.grid[point] = player.value
-        self.player_num_stones[player] += 1
-
-    def get(self, point):
-        """
-        get stone on grid
-        """
-        return self.grid[point]
-
-    def get_grid(self):
-        return self.grid
-
-    def remain_point_nums(self):
-        return self.board_size * self.board_size - self.player_num_stones[Player.black] - self.player_num_stones[Player.white]
 
 
 class GameState:
@@ -97,8 +61,11 @@ class GameState:
                 self.winner = Player.both
             return self.game_over
 
+    def get_winner(self):
+        return self.winner
+
     @classmethod
-    def new_game(cls, rule_constructor):
-        board = Board()
-        rule = rule_constructor(board.board_size)
+    def new_game(cls, board_size, rule_constructor):
+        board = Board(board_size)
+        rule = rule_constructor(board_size)
         return GameState(rule, board, Player.black, None)
