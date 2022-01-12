@@ -5,6 +5,12 @@ from codes import utils
 
 class TicTacToeRule(AbstractRule):
     def __init__(self, board_size):
+        """[summary]
+
+        Args:
+            board_size (int): Size of board.
+        """
+
         super().__init__(board_size)
         self.list_dx = [-1, 1, -1, 1, 0, 0, 1, -1]
         self.list_dy = [0, 0, -1, 1, -1, 1, -1, 1]

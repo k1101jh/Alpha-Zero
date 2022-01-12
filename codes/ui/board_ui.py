@@ -12,6 +12,13 @@ BOARD_COLOR = (255, 165, 0)
 
 class BoardUI():
     def __init__(self, board_size, board_length):
+        """[summary]
+
+        Args:
+            board_size (int): Size of board.
+            board_length (int): Length of board ui.
+        """
+
         super().__init__()
         self.daemon = True
         self.board_size = board_size
@@ -47,6 +54,7 @@ class BoardUI():
         Args:
             board (Board): [description]
         """
+
         self.lock.acquire()
         self.stone_group.empty()
         for row in range(self.board_size):

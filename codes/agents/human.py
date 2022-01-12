@@ -5,6 +5,10 @@ from codes.utils import point_from_coords
 
 class Human(Agent):
     def __init__(self):
+        """[summary]
+            Human Player.
+        """
+
         super().__init__()
         self.input_queue = None
 

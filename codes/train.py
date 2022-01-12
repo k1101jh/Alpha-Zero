@@ -45,7 +45,7 @@ def train():
 
     # load or generate agent
     if os.path.exists(load_agent_filename):
-        agent = ZeroAgent.load_agent(load_agent_filename, 'cuda:0', NUM_THREADS_PER_ROUND)
+        agent = ZeroAgent.load_agent(load_agent_filename, 'cuda:0', NUM_THREADS_PER_ROUND, True)
     else:
         model = AlphaZeroModel(encoder.shape()[0], num_blocks=5, board_size=BOARD_SIZE)
         agent = ZeroAgent(encoder, model, device='cuda:0',
@@ -187,7 +187,7 @@ def evaluate_bot(game_type, rule_type, agent, prev_agent):
     eval_agent_color = Player.black
     black_agent, white_agent = agent, prev_agent
 
-    for i in range(2):
+    for _ in range(2):
         winners, _ = generate_experience(NUM_TEST_GAMES_HALF, game_type, rule_type, black_agent, white_agent, collect_exp=False)
 
         for winner in winners:

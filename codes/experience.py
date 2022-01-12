@@ -5,6 +5,11 @@ from torch.utils.data import Dataset
 
 class ExperienceCollector:
     def __init__(self):
+        """[summary]
+            Collect status of game.
+            Use with zero_agent.
+        """
+
         self.states = []
         self.visit_counts = []
         self.rewards = []
@@ -50,6 +55,15 @@ class ExperienceCollector:
 
 class ExperienceDataset(Dataset):
     def __init__(self, board_size, num_planes, max_size):
+        """[summary]
+            This class returns experiences to train DeepLearning model.
+            use add_experience to append experience.
+        Args:
+            board_size (int): Size of board.
+            num_planes (int): Num of encoder planes.
+            max_size (int): Max num of experiences.
+        """
+
         self.board_size = board_size
         self.num_planes = num_planes
         self.max_size = max_size
@@ -62,9 +76,24 @@ class ExperienceDataset(Dataset):
         self.reward_memory = torch.zeros(self.max_size)
 
     def __len__(self):
+        """[summary]
+            Returns num of experiences in this dataset.
+        Returns:
+            int: num of experiences.
+        """
+
         return (self.rear - self.front + self.max_size) % self.max_size
 
     def __getitem__(self, idx):
+        """[summary]
+
+        Args:
+            idx (int): [description]
+
+        Returns:
+            [type]: [description]
+        """
+
         return [self.state_memory[idx],
                 self.visit_count_memory[idx] / self.visit_count_sum_memory[idx],
                 self.reward_memory[idx]]

@@ -5,15 +5,25 @@ import torch.nn as nn
 
 class AlphaZeroModel(nn.Module):
     def __init__(self, in_channels, mid_channels=128, num_blocks=7, board_size=15):
+        """[summary]
+            Alpha Zero network.
+        Args:
+            in_channels (int): Num of input channels.
+            mid_channels (int, optional): Num of mid channels. Defaults to 128.
+            num_blocks (int, optional): Num of residual blocks. Defaults to 7.
+            board_size (int, optional): Size of board. Defaults to 15.
+        """
+
         super().__init__()
         self.conv = ConvBnReluBlock(in_channels, mid_channels)
         self.layers = self._make_layer(mid_channels, num_blocks)
         self.policy = PolicyHead(mid_channels, board_size)
         self.value = ValueHead(mid_channels, board_size)
 
-    def _make_layer(self, in_channels, num_blocks):
+    @classmethod
+    def _make_layer(cls, in_channels, num_blocks):
         layers = []
-        for num_block in range(num_blocks):
+        for _ in range(num_blocks):
             layers.append(ResidualBlock(in_channels))
         return nn.Sequential(*layers)
 
@@ -27,6 +37,13 @@ class AlphaZeroModel(nn.Module):
 
 class ConvBnReluBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
+        """[summary]
+            Convolution block with batchnorm and ReLU.
+        Args:
+            in_channels (int): Num of input channels.
+            out_channels (int): Num of output channels.
+        """
+
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(out_channels)
@@ -41,6 +58,12 @@ class ConvBnReluBlock(nn.Module):
 
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels):
+        """[summary]
+
+        Args:
+            in_channels (int): Num of input channels.
+        """
+
         super().__init__()
         self.residual_block = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
@@ -59,6 +82,14 @@ class ResidualBlock(nn.Module):
 
 class PolicyHead(nn.Module):
     def __init__(self, in_channels, board_size):
+        """[summary]
+            Policy network.
+            Returns priors of branches.
+        Args:
+            in_channels (int): Num of input channels.
+            board_size (int): Size of board.
+        """
+
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 4, kernel_size=1)
         self.bn = nn.BatchNorm2d(4)
@@ -78,6 +109,14 @@ class PolicyHead(nn.Module):
 
 class ValueHead(nn.Module):
     def __init__(self, in_channels, board_size):
+        """[summary]
+            Value network.
+            Returns value of state.
+        Args:
+            in_channels (int): Num of input channels.
+            board_size (int): Size of board.
+        """
+
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
         self.bn = nn.BatchNorm2d(2)

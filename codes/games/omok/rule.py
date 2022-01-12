@@ -5,6 +5,12 @@ from codes import utils
 
 class FreeRule(AbstractRule):
     def __init__(self, board_size):
+        """[summary]
+
+        Args:
+            board_size (int): Size of board.
+        """
+
         super().__init__(board_size)
 
     def get_stone_count(self, game_state, point, direction):
