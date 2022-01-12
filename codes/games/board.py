@@ -1,6 +1,6 @@
 import numpy as np
 
-from codes.types import Player
+from codes.game_types import Player
 from codes import utils
 
 

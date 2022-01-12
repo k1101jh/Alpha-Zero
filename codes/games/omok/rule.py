@@ -1,4 +1,4 @@
-from codes.types import Point
+from codes.game_types import Point
 from codes.games.abstract_rule import AbstractRule
 from codes import utils
 

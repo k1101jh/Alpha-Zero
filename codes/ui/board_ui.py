@@ -1,8 +1,8 @@
 import pygame
 import threading
 
-from codes.types import Player
-from codes.types import Point
+from codes.game_types import Player
+from codes.game_types import Point
 from codes.ui.sprites import StoneSprite
 from codes.ui.sprites import VisitCountSprite
 

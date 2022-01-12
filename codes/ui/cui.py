@@ -6,7 +6,7 @@ from codes.utils import print_board
 from codes.utils import print_move
 from codes.utils import print_visit_count
 from codes.utils import print_winner
-from codes.types import UIEvent
+from codes.game_types import UIEvent
 
 
 class CUI:

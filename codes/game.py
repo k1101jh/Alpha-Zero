@@ -1,4 +1,6 @@
-from codes.types import Player
+import argparse
+
+from codes.game_types import Player
 from codes.agents.human import Human
 from codes.agents.zero_agent import ZeroAgent
 from codes.ui.cui import CUI

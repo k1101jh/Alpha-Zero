@@ -1,7 +1,7 @@
 import threading
 from codes import utils
-from codes import types
-from codes.types import UIEvent
+from codes import game_types
+from codes.game_types import UIEvent
 
 
 class Game(threading.Thread):
@@ -10,7 +10,7 @@ class Game(threading.Thread):
         super().__init__()
         self.daemon = True
 
-        self.board_size = types.board_size_dict[game_type]
+        self.board_size = game_types.board_size_dict[game_type]
         self.game_state_constructor = utils.get_game_state_constructor(game_type)
         self.rule_constructor = utils.get_rule_constructor(game_type, rule_type)
         self.game_state = self.game_state_constructor.new_game(self.board_size, self.rule_constructor)

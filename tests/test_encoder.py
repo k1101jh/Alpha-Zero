@@ -1,8 +1,8 @@
 import numpy as np
 
-from codes.types import Player
-from codes.types import Point
-from codes.types import Move
+from codes.game_types import Player
+from codes.game_types import Point
+from codes.game_types import Move
 from codes.games.tic_tac_toe.game_state import Board
 from codes.games.tic_tac_toe.game_state import GameState
 from codes.games.tic_tac_toe.rule import TicTacToeRule

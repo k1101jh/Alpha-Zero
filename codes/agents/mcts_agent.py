@@ -3,7 +3,7 @@ import threading
 import random
 
 from codes.agents.abstract_agent import Agent
-from codes.types import Player
+from codes.game_types import Player
 
 lock = threading.Lock()
 

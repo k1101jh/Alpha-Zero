@@ -1,6 +1,6 @@
 import pygame
 
-from codes.types import Player
+from codes.game_types import Player
 
 
 PLAYER_COLOR = {
