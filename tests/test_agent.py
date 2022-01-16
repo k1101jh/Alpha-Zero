@@ -18,7 +18,7 @@ class TestMCTS:
         num_threads = 2
         agent_file_name = utils.get_agent_filename(game_type, agent_version)
         loaded_agent = ZeroAgent.load_agent(agent_file_name, 'cuda:0', num_threads, False)
-        loaded_agent.rounds_per_move = 300
+        loaded_agent.simulations_per_move = 300
 
         self.players = {
             Player.black: loaded_agent,
