@@ -45,19 +45,19 @@ class TreeNode:
 
 
 class MCTSAgent(Agent):
-    def __init__(self, encoder, rounds_per_move=300, num_threads_per_round=12):
+    def __init__(self, encoder, simulations_per_move=300, num_threads_per_round=12):
         """[summary]
             Use Monte Carlo Tree Search(MCTS) Algorithm to select move.
         Args:
             encoder ([type]): [description]
-            rounds_per_move (int, optional): [description]. Defaults to 300.
+            simulations_per_move (int, optional): [description]. Defaults to 300.
             num_threads_per_round (int, optional): [description]. Defaults to 12.
         """
         super().__init__()
         self.encoder = encoder
         self.num_simulated_games = 0
         self.num_threads_per_round = num_threads_per_round
-        self.rounds_per_move = rounds_per_move
+        self.simulations_per_move = simulations_per_move
         self.lock = threading.Lock()
 
     def add_num_simulated_games(self, num):
@@ -82,7 +82,7 @@ class MCTSAgent(Agent):
 
     def select_move(self, game_state):
         root = self.create_node(game_state)
-        remain_rounds = self.rounds_per_move
+        remain_rounds = self.simulations_per_move
         # 게임 진행
         while remain_rounds > 0:
             num_thread = min(self.num_threads_per_round, remain_rounds)

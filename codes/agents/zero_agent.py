@@ -79,7 +79,7 @@ class TreeNode:
 
 
 class ZeroAgent(Agent):
-    def __init__(self, encoder, model, device, c=5.0, rounds_per_move=300, num_threads_per_round=12, noise=True, lr=1e-3):
+    def __init__(self, encoder, model, device, c=5.0, simulations_per_move=300, num_threads_per_round=12, noise=True, lr=1e-3):
         """[summary]
             Use Monte Carlo Tree Search algorithm with DeepLearning.
         Args:
@@ -87,7 +87,7 @@ class ZeroAgent(Agent):
             model ([type]): [description]
             device ([type]): [description]
             c (float, optional): [description]. Defaults to 5.0.
-            rounds_per_move (int, optional): [description]. Defaults to 300.
+            simulations_per_move (int, optional): [description]. Defaults to 300.
             num_threads_per_round (int, optional): [description]. Defaults to 12.
             noise (bool, optional): [description]. Defaults to True.
             lr (float, optional): [description]. Defaults to 1e-3.
@@ -104,7 +104,7 @@ class ZeroAgent(Agent):
 
         self.num_simulated_games = 0
         self.num_threads_per_round = num_threads_per_round
-        self.rounds_per_move = rounds_per_move
+        self.simulations_per_move = simulations_per_move
         self.epoch = 0
 
         self.lr = lr
@@ -119,7 +119,7 @@ class ZeroAgent(Agent):
         Returns:
             ZeroAgent: Copied ZeroAgent.
         """
-        copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.rounds_per_move, self.num_threads_per_round, self.noise)
+        copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.simulations_per_move, self.num_threads_per_round, self.noise)
         copy_object.set_collector(self.collector)
         copy_object.num_simulated_games = self.num_simulated_games
         copy_object.epoch = self.epoch
@@ -192,10 +192,18 @@ class ZeroAgent(Agent):
             return q + self.c * p * np.sqrt(total_n) / (n + 1)
 
         return heapq.nlargest(num, node.move_idxes(), key=score_branch)
+    
+    @classmethod
+    def get_value(cls, winner):
+        # 무승부인 경우
+        if winner == Player.both:
+            return 0
+        else:
+            return 1
 
     def select_move(self, game_state):
         root = self.create_node(game_state)
-        remain_rounds = self.rounds_per_move
+        remain_rounds = self.simulations_per_move
 
         # 게임 진행
         for _ in tqdm(range(remain_rounds)):
@@ -225,21 +233,17 @@ class ZeroAgent(Agent):
 
     def simulate(self, root, next_move_idx, thread_lock):
         node = root
+        # Selection
         while node.has_child(next_move_idx):
             node = node.get_child(next_move_idx)
             if not node.state.game_over:
                 next_move_idx = self.select_branch(node)
 
+        # Expansion & Simulation
         # 노드가 없거나 승자가 나왔으면 게임 진행 종료
-        # 게임이 끝났으면
         if node.state.game_over:
             move_idx = node.last_move_idx
-            # 승자가 없으면(돌을 더 놓을 수 없으면)
-            if node.state.winner == Player.both:
-                value = 0
-            else:
-                value = 1
-
+            value = self.get_value(node.state.winner)
             node = node.parent
         else:
             next_move = self.encoder.decode_move_index(next_move_idx)
@@ -248,13 +252,11 @@ class ZeroAgent(Agent):
 
             move_idx = next_move_idx
             if child_node.state.check_game_over():
-                if child_node.state.winner == Player.both:
-                    value = 0
-                else:
-                    value = 1
+                value = self.get_value(child_node.state.winner)
             else:
                 value = -1 * child_node.value.item()
 
+        # Backpropagation
         thread_lock.acquire()
         while node is not None:
             node.record_visit(move_idx, value)
@@ -310,7 +312,6 @@ class ZeroAgent(Agent):
         state = {
             'encoder': self.encoder,
             'model': self.model,
-            'rounds_per_move': self.rounds_per_move,
             'num_simulated_games': self.num_simulated_games,
             'epoch': self.epoch,
             'optimizer': self.optimizer.state_dict(),
@@ -324,14 +325,12 @@ class ZeroAgent(Agent):
         loaded_file = torch.load(pthfilename, map_location='cuda:0')
         encoder = loaded_file['encoder']
         model = loaded_file['model']
-        rounds_per_move = loaded_file['rounds_per_move']
         num_simulated_games = loaded_file['num_simulated_games']
         epoch = loaded_file['epoch']
         optimizer_state_dict = loaded_file['optimizer']
         scheduler_state_dict = loaded_file['scheduler']
 
         loaded_agent = ZeroAgent(encoder, model, device,
-                                 rounds_per_move=rounds_per_move,
                                  num_threads_per_round=num_threads_per_round,
                                  noise=noise)
         loaded_agent.optimizer.load_state_dict(optimizer_state_dict)

@@ -28,7 +28,7 @@ MAX_MEMORY_SIZE = 40000
 EPOCHS = 1000
 TEST_TERM = 10
 BATCH_SIZE = 512
-ROUNDS_PER_MOVE = 300
+SIMULATIONS_PER_MOVE = 300
 NUM_SIMULATE_GAMES = 10
 NUM_THREADS_PER_ROUND = 2
 NUM_TEST_GAMES_HALF = 5
@@ -49,7 +49,7 @@ def train():
     else:
         model = AlphaZeroModel(encoder.shape()[0], num_blocks=5, board_size=BOARD_SIZE)
         agent = ZeroAgent(encoder, model, device='cuda:0',
-                          rounds_per_move=ROUNDS_PER_MOVE,
+                          simulations_per_move=SIMULATIONS_PER_MOVE,
                           num_threads_per_round=NUM_THREADS_PER_ROUND,
                           lr=LEARNING_RATE)
         agent_version = 0
