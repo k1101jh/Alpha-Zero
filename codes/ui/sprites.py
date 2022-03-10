@@ -1,6 +1,7 @@
+from typing import Tuple
 import pygame
 
-from codes.game_types import Player
+from games.game_types import Player
 
 
 PLAYER_COLOR = {
@@ -10,7 +11,7 @@ PLAYER_COLOR = {
 
 
 class StoneSprite(pygame.sprite.Sprite):
-    def __init__(self, group, player, pos, size):
+    def __init__(self, group, player: Player, pos: Tuple[int, int], size: Tuple[int, int]):
         """[summary]
         Args:
             group ([type]): [description]
@@ -34,7 +35,7 @@ class StoneSprite(pygame.sprite.Sprite):
 
 
 class VisitCountSprite(pygame.sprite.Sprite):
-    def __init__(self, group, pos, size, text):
+    def __init__(self, group, pos: Tuple[int, int], size: Tuple[int, int], text: str):
         """[summary]
         Args:
             group ([type]): [description]

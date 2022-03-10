@@ -12,8 +12,17 @@
             "console": "integratedTerminal",
             "cwd": "${fileDirname}",
             "env" : {
-                "PYTHONPATH": "${workspaceFolder}"
+                "PYTHONPATH": "${workspaceFolder}/codes"
             },
+        },
+        {
+            "name": "Python: Current File with profiler",
+            "type": "python",
+            "request": "launch",
+            "module": "cProfile",
+            "args": [
+                "-o", "/tmp/tmp.prof", "${file}"
+            ]
         }
     ]
 }

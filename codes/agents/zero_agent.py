@@ -1,85 +1,94 @@
 # 참고한 코드: https://github.com/maxpumperla/deep_learning_and_the_game_of_go/blob/master/code/dlgo/zero/agent.py
+from typing import Dict, Iterable, Optional, Tuple, TypeVar
 import numpy as np
 import heapq
 import threading
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from codes.agents.abstract_agent import Agent
-from codes.game_types import Player
+from agents.abstract_agent import AbstractAgent
+from encoders.zero_encoder import ZeroEncoder
+from games.experience import ExperienceCollector, ExperienceDataset
+from games.game_types import Move, Player
+from games.abstract_game_state import AbstractGameState
 
 
-class Branch:
-    def __init__(self, prior):
-        """[summary]
-        Args:
-            prior (float): Prior of this branch.
-        """
-        self.prior = prior
-        self.visit_count = 0
-        self.total_value = 0.0
+SelfTreeNode = TypeVar("SelfTreeNode", bound="TreeNode")
+SelfZeroAgent = TypeVar("SelfZeroAgent", bound="ZeroAgent")
 
 
 class TreeNode:
-    def __init__(self, state, value, priors, parent, last_move_idx):
+    def __init__(self, state: AbstractGameState, value: float, priors: Dict, parent: SelfTreeNode, c: float, last_move_idx: int):
         """[summary]
             MCTS tree node.
             Each node has game state.
         Args:
-            state (GameState): Game state.
+            state (AbstractGameState): Game state.
             value (float): Value of this state.
-            priors (dict): Prior of branches. Key is index and value is prior.
-            parent (TreeNode): Parent node.
-            last_move_idx (int): Last move index.
+            priors (Dict): Prior of branches. Key is index and value is prior.
+            parent (SelfTreeNode): Parent node.
+            c (float): [description]
+            last_move_idx (int): [description]
         """
         self.state = state
         self.value = value
         self.parent = parent
+        self.c = c
         self.last_move_idx = last_move_idx
         self.total_visit_count = 1
         self.branches = {}
+        num_points = self.state.get_board_size() ** 2
+        self.q_scores = np.zeros((num_points), dtype=np.float64)
+        self.c_scores = np.zeros((num_points), dtype=np.float64)
         for idx, p in priors.items():
             if state.check_valid_move_idx(idx):
-                self.branches[idx] = Branch(p)
+                self.branches[idx] = {
+                    "visit_count": 0,
+                    "total_value": 0.0,
+                    "p": p,
+                }
+                self.c_scores[idx] = self.c * p
         self.children = {}
 
-    def move_idxes(self):
+    def move_idxes(self) -> Iterable[int]:
         return self.branches.keys()
 
-    def add_child(self, move_idx, child_node):
+    def add_child(self, move_idx: int, child_node: SelfTreeNode) -> None:
         self.children[move_idx] = child_node
 
-    def has_child(self, move_idx):
+    def has_child(self, move_idx: int) -> bool:
         return move_idx in self.children
 
-    def get_child(self, move_idx):
+    def get_child(self, move_idx: int) -> SelfTreeNode:
         return self.children[move_idx]
 
-    def record_visit(self, move_idx, value):
+    def record_visit_and_update_score(self, move_idx: int, value: float) -> None:
         self.total_visit_count += 1
-        self.branches[move_idx].visit_count += 1
-        self.branches[move_idx].total_value += value
+        self.branches[move_idx]["visit_count"] += 1
+        self.branches[move_idx]["total_value"] += value
 
-    def expected_value(self, move_idx):
-        branch = self.branches[move_idx]
-        if branch.visit_count == 0:
-            return 0.0
-        return branch.total_value / branch.visit_count
+        visit_count = self.branches[move_idx]["visit_count"]
+        p = self.branches[move_idx]["p"]
+        self.q_scores[move_idx] = self.branches[move_idx]["total_value"] / visit_count
+        self.c_scores[move_idx] = self.c * p / (visit_count + 1)
 
-    def prior(self, move_idx):
-        return self.branches[move_idx].prior
+    def get_scores(self, sqrt_total_n: float) -> np.ndarray:
+        return self.q_scores + self.c_scores * sqrt_total_n
 
-    def visit_count(self, move_idx):
+    def visit_count(self, move_idx: int) -> int:
         if move_idx in self.branches:
-            return self.branches[move_idx].visit_count
+            return self.branches[move_idx]["visit_count"]
         return 0
 
 
-class ZeroAgent(Agent):
-    def __init__(self, encoder, model, device, c=5.0, simulations_per_move=300, num_threads_per_round=12, noise=True, lr=1e-3):
+class ZeroAgent(AbstractAgent):
+    def __init__(self, encoder: ZeroEncoder, model: nn.Module, device: str,
+                 c: float = 5.0, simulations_per_move: int = 500, num_threads_per_round: int = 1,
+                 noise: bool = True, lr: float = 1e-4):
         """[summary]
             Use Monte Carlo Tree Search algorithm with DeepLearning.
         Args:
@@ -109,42 +118,53 @@ class ZeroAgent(Agent):
 
         self.lr = lr
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, 250, 0.1)
+        self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=150, gamma=0.5)
 
-    def __deepcopy__(self, memo):
-        """[summary]
-        Args:
-            memodict (dict, optional): [description]. Defaults to {}.
+    # def __deepcopy__(self, memo):
+        # """[summary]
+        # Args:
+        #     memodict (dict, optional): [description]. Defaults to {}.
 
-        Returns:
-            ZeroAgent: Copied ZeroAgent.
-        """
-        copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.simulations_per_move, self.num_threads_per_round, self.noise)
-        copy_object.set_collector(self.collector)
-        copy_object.num_simulated_games = self.num_simulated_games
-        copy_object.epoch = self.epoch
-        copy_object.optimizer.load_state_dict(self.optimizer.state_dict())
-        copy_object.scheduler.load_state_dict(self.scheduler.state_dict())
+        # Returns:
+        #     ZeroAgent: Copied ZeroAgent.
+        # """
+        # copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.simulations_per_move, self.num_threads_per_round, self.noise)
+        # copy_object.set_collector(self.collector)
+        # copy_object.num_simulated_games = self.num_simulated_games
+        # copy_object.epoch = self.epoch
+        # copy_object.optimizer.load_state_dict(self.optimizer.state_dict())
+        # copy_object.scheduler.load_state_dict(self.scheduler.state_dict())
 
-        return copy_object
+        # return copy_object
+        
+        # cls = self.__class__
+        # result = cls.__new__(cls)
+        # memo[id(self)] = result
+        # for k, v in self.__dict__.items():
+        #     setattr(result, k, deepcopy(v, memo))
+        # return result
 
-    def set_noise(self, noise):
+    def set_device(self, device: str) -> None:
+        self.device = torch.device(device)
+        self.model = self.model.to(self.device)
+
+    def set_noise(self, noise: bool) -> None:
         self.noise = noise
 
-    def set_collector(self, collector):
+    def set_collector(self, collector: ExperienceCollector) -> None:
         self.collector = collector
 
-    def set_agent_data(self, epoch=None, num_simulated_games=None):
+    def set_agent_data(self, epoch: int = None, num_simulated_games: int = None) -> None:
         if epoch is not None:
             self.epoch = epoch
 
         if num_simulated_games is not None:
             self.num_simulated_games = num_simulated_games
 
-    def add_num_simulated_games(self, num):
+    def add_num_simulated_games(self, num: int) -> None:
         self.num_simulated_games += num
 
-    def create_node(self, state, move_idx=None, parent=None):
+    def create_node(self, state: AbstractGameState, move_idx: int = None, parent: TreeNode = None) -> TreeNode:
         with torch.no_grad():
             state_tensor = self.encoder.encode(state)
             model_input = torch.tensor([state_tensor], dtype=torch.float, device=self.device)
@@ -155,58 +175,48 @@ class ZeroAgent(Agent):
         if self.noise and parent is None:
             noise_probs = np.random.dirichlet(self.alpha * np.ones(self.encoder.num_moves()))
             move_priors = {
-                idx: 0.75 * p + 0.25 * noise_probs[idx]
+                idx: 0.75 * p.item() + 0.25 * noise_probs[idx]
                 for idx, p in enumerate(prior)
             }
         else:
             move_priors = {
-                idx: p
+                idx: p.item()
                 for idx, p in enumerate(prior)
             }
 
-        new_node = TreeNode(state, value, move_priors, parent, move_idx)
+        new_node = TreeNode(state, value, move_priors, parent, self.c, move_idx)
 
         if parent is not None:
             parent.add_child(move_idx, new_node)
 
         return new_node
 
-    def select_branch(self, node):
-        total_n = node.total_visit_count
+    def select_branch(self, node: TreeNode) -> int:
+        sqrt_total_n = np.sqrt(node.total_visit_count)
+        branch_scores = node.get_scores(sqrt_total_n)
 
-        def score_branch(move_idx):
-            q = node.expected_value(move_idx)
-            p = node.prior(move_idx)
-            n = node.visit_count(move_idx)
-            return q + self.c * p * np.sqrt(total_n) / (n + 1)
+        return max(node.move_idxes(), key=lambda x: branch_scores[x])
+        
+    def select_branches(self, node: TreeNode, num: int):
+        sqrt_total_n = np.sqrt(node.total_visit_count)
+        branch_scores = node.get_scores(sqrt_total_n)
 
-        return max(node.move_idxes(), key=score_branch)
+        return heapq.nlargest(num, node.move_idxes(), key=lambda x: branch_scores[x])
 
-    def select_branches(self, node, num):
-        total_n = node.total_visit_count
-
-        def score_branch(move_idx):
-            q = node.expected_value(move_idx)
-            p = node.prior(move_idx)
-            n = node.visit_count(move_idx)
-            return q + self.c * p * np.sqrt(total_n) / (n + 1)
-
-        return heapq.nlargest(num, node.move_idxes(), key=score_branch)
-    
     @classmethod
-    def get_value(cls, winner):
+    def get_value(cls, winner: Player) -> int:
         # 무승부인 경우
         if winner == Player.both:
             return 0
         else:
             return 1
 
-    def select_move(self, game_state):
+    def select_move(self, game_state: AbstractGameState) -> Tuple[Move, Optional[np.ndarray]]:
         root = self.create_node(game_state)
         remain_rounds = self.simulations_per_move
-
+        
         # 게임 진행
-        for _ in tqdm(range(remain_rounds)):
+        for _ in range(remain_rounds):
             first_move_idx_candidates = self.select_branches(root, self.num_threads_per_round)
             threads = []
             thread_lock = threading.Lock()
@@ -230,8 +240,8 @@ class ZeroAgent(Agent):
 
         selected_move_idx = max(root.move_idxes(), key=root.visit_count)
         return self.encoder.decode_move_index(selected_move_idx), visit_counts
-
-    def simulate(self, root, next_move_idx, thread_lock):
+    
+    def simulate(self, root: TreeNode, next_move_idx: int, thread_lock):
         node = root
         # Selection
         while node.has_child(next_move_idx):
@@ -259,13 +269,13 @@ class ZeroAgent(Agent):
         # Backpropagation
         thread_lock.acquire()
         while node is not None:
-            node.record_visit(move_idx, value)
+            node.record_visit_and_update_score(move_idx, value)
             move_idx = node.last_move_idx
             node = node.parent
             value = -1 * value
         thread_lock.release()
 
-    def train(self, dataset, batch_size):
+    def train(self, dataset: ExperienceDataset, batch_size: int) -> Tuple[torch.tensor, torch.tensor, torch.tensor]:
         self.model.train()
 
         dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4,
@@ -293,7 +303,7 @@ class ZeroAgent(Agent):
                 policy_loss_sum += policy_loss.detach() * state.size(0)
                 value_loss_sum += value_loss.detach() * state.size(0)
                 epoch_loss_sum += epoch_loss.detach() * state.size(0)
-
+                
                 self.optimizer.zero_grad()
                 epoch_loss.backward()
                 self.optimizer.step()
@@ -308,7 +318,7 @@ class ZeroAgent(Agent):
 
         return loss, policy_loss, value_loss
 
-    def save_agent(self, pthfile):
+    def save_agent(self, pthfile: str) -> None:
         state = {
             'encoder': self.encoder,
             'model': self.model,
@@ -321,8 +331,8 @@ class ZeroAgent(Agent):
         torch.save(state, pthfile)
 
     @staticmethod
-    def load_agent(pthfilename, device, num_threads_per_round, noise=False):
-        loaded_file = torch.load(pthfilename, map_location='cuda:0')
+    def load_agent(pthfilename: str, device: str, num_threads_per_round: int = 1, noise: bool = False) -> SelfZeroAgent:
+        loaded_file = torch.load(pthfilename, map_location='cpu')
         encoder = loaded_file['encoder']
         model = loaded_file['model']
         num_simulated_games = loaded_file['num_simulated_games']

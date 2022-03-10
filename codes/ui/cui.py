@@ -1,16 +1,18 @@
 import queue
+from typing import Tuple
+from agents.abstract_agent import AbstractAgent
 
-from codes.games.game import Game
-from codes.utils import print_turn
-from codes.utils import print_board
-from codes.utils import print_move
-from codes.utils import print_visit_count
-from codes.utils import print_winner
-from codes.game_types import UIEvent
+from games.game import Game
+from utils import print_turn
+from utils import print_board
+from utils import print_move
+from utils import print_visit_count
+from utils import print_winner
+from games.game_types import UIEvent
 
 
 class CUI:
-    def __init__(self, game_type, rule_type, players):
+    def __init__(self, game_type: str, rule_type: str, players: Tuple[AbstractAgent, AbstractAgent]):
         """[summary]
             Play game on CUI.
         Args:
@@ -22,12 +24,13 @@ class CUI:
         self.game = Game(game_type, rule_type, players, self.event_queue)
         self.board_size = self.game.get_board_size()
 
-    def run(self):
+    def run(self) -> None:
         self.game.start()
         game_over = False
 
         while not game_over:
             event, val = self.event_queue.get()
+            self.event_queue.task_done()
             if event == UIEvent.BOARD:
                 print_board(val)
             elif event == UIEvent.VISIT_COUNTS:
@@ -39,7 +42,5 @@ class CUI:
                 print_winner(val)
                 game_over = True
 
-            self.event_queue.task_done()
-
-    def get_game(self):
+    def get_game(self) -> Game:
         return self.game

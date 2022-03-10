@@ -1,20 +1,23 @@
+from multiprocessing import Queue
 import os
 import copy
 import time
+from typing import Iterable, Tuple
 from tqdm import tqdm
 import torch
 import torch.multiprocessing as mp
 from torch.utils.tensorboard import SummaryWriter
 
-from codes.agents.zero_agent import ZeroAgent
-from codes.encoders.zero_encoder import ZeroEncoder
-from codes.networks.alpha_zero import AlphaZeroModel
-from codes.experience import ExperienceCollector
-from codes.experience import ExperienceDataset
-from codes.ui.cui import CUI
-from codes.game_types import board_size_dict
-from codes.game_types import Player
-from codes import utils
+from agents.abstract_agent import AbstractAgent
+from agents.zero_agent import ZeroAgent
+from encoders.zero_encoder import ZeroEncoder
+from games.game import Game
+from networks.alpha_zero import AlphaZeroModel
+from games.experience import ExperienceCollector
+from games.experience import ExperienceDataset
+from games.game_types import board_size_dict
+from games.game_types import Player
+import utils
 
 
 writer = SummaryWriter('../runs')
@@ -22,21 +25,22 @@ writer = SummaryWriter('../runs')
 NUM_DEVICES = torch.cuda.device_count()
 AGENT_NAME = "ZeroAgent"
 GAME_TYPE = "MiniOmok"
-RULE_TYPE = "FreeRule"
+RULE_TYPE = "OmokFreeRule"
 BOARD_SIZE = board_size_dict[GAME_TYPE]
-MAX_MEMORY_SIZE = 40000
-EPOCHS = 1000
-TEST_TERM = 10
+MAX_MEMORY_SIZE = 30000
+EPOCHS = 2000
+TEST_TERM = 20
 BATCH_SIZE = 512
-SIMULATIONS_PER_MOVE = 300
-NUM_SIMULATE_GAMES = 10
-NUM_THREADS_PER_ROUND = 2
-NUM_TEST_GAMES_HALF = 5
-LEARNING_RATE = 3e-3
-LOAD_AGENT_VERSION = 1
+SIMULATIONS_PER_MOVE = 500
+NUM_MAX_PROCESSES = os.cpu_count()
+NUM_SIMULATE_GAMES = os.cpu_count()
+NUM_TEST_GAMES_HALF = os.cpu_count()
+NUM_THREADS_PER_ROUND = 1
+LEARNING_RATE = 4e-4
+LOAD_AGENT_VERSION = 50
 
 
-def train():
+def train() -> None:
     mp.set_start_method('spawn')
     agent_version = LOAD_AGENT_VERSION
     load_agent_filename = utils.get_agent_filename(GAME_TYPE, LOAD_AGENT_VERSION)
@@ -45,15 +49,20 @@ def train():
 
     # load or generate agent
     if os.path.exists(load_agent_filename):
-        agent = ZeroAgent.load_agent(load_agent_filename, 'cuda:0', NUM_THREADS_PER_ROUND, True)
+        agent = ZeroAgent.load_agent(load_agent_filename, 'cpu',
+                                     num_threads_per_round=NUM_THREADS_PER_ROUND,
+                                     noise=True)
     else:
-        model = AlphaZeroModel(encoder.shape()[0], num_blocks=5, board_size=BOARD_SIZE)
-        agent = ZeroAgent(encoder, model, device='cuda:0',
+        model = AlphaZeroModel(encoder.shape()[0], num_blocks=8, board_size=BOARD_SIZE)
+        agent = ZeroAgent(encoder, model, device='cpu',
                           simulations_per_move=SIMULATIONS_PER_MOVE,
                           num_threads_per_round=NUM_THREADS_PER_ROUND,
                           lr=LEARNING_RATE)
         agent_version = 0
 
+    prev_agent = copy.deepcopy(agent)
+    train_agent = copy.deepcopy(agent)
+    train_agent.set_device('cuda:0')
     # generate experience memory
     memory = ExperienceDataset(BOARD_SIZE, encoder.num_planes, MAX_MEMORY_SIZE)
 
@@ -63,10 +72,8 @@ def train():
         num_white_wins = 0
         num_draw = 0
 
-        prev_agent = copy.deepcopy(agent)
-
         # generate experience
-        game_results, collectors = generate_experience(NUM_SIMULATE_GAMES, GAME_TYPE, RULE_TYPE, agent, prev_agent, collect_exp=True)
+        game_results, collectors = generate_experience(NUM_SIMULATE_GAMES, GAME_TYPE, RULE_TYPE, agent, copy.deepcopy(agent), collect_exp=True)
         memory.add_experiences(collectors)
 
         # game statistics
@@ -85,13 +92,15 @@ def train():
                            epoch)
 
         # train agent
-        loss, policy_loss, value_loss = agent.train(memory, BATCH_SIZE)
+        loss, policy_loss, value_loss = train_agent.train(memory, BATCH_SIZE)
         writer.add_scalars('loss',
                            {'Policy Loss': policy_loss,
                             'Value Loss': value_loss,
                             'Epoch Loss': loss},
                            epoch)
-
+        agent.model.load_state_dict(train_agent.model.state_dict())
+        agent.optimizer.load_state_dict(train_agent.optimizer.state_dict())
+        agent.scheduler.load_state_dict(train_agent.scheduler.state_dict())
         agent.add_num_simulated_games(NUM_SIMULATE_GAMES)
         agent.epoch = epoch
 
@@ -105,11 +114,13 @@ def train():
             agent_version += 1
             update_agent_filename = utils.get_agent_filename(GAME_TYPE, agent_version)
             agent.save_agent(update_agent_filename)
+            prev_agent = copy.deepcopy(agent)
 
     writer.close()
 
 
-def simulate_game(game_type, rule_type, black_agent, white_agent, collect_experience=False):
+def simulate_game(game_type: str, rule_type: str, black_agent: AbstractAgent, white_agent: AbstractAgent,
+                  device_num: int, result_queue: Queue, collect_experience: bool = False) -> None:
     start_time = time.time()
 
     players = {
@@ -117,11 +128,15 @@ def simulate_game(game_type, rule_type, black_agent, white_agent, collect_experi
         Player.white: white_agent,
     }
 
-    ui = CUI(game_type, rule_type, players)
+    game = Game(game_type, rule_type, players)
+
+    # set device
+    black_agent.set_device(device_num)
+    white_agent.set_device(device_num)
 
     if collect_experience is True:
-        black_collector = ExperienceCollector()
-        white_collector = ExperienceCollector()
+        black_collector = ExperienceCollector(BOARD_SIZE)
+        white_collector = ExperienceCollector(BOARD_SIZE)
 
         black_agent.set_collector(black_collector)
         white_agent.set_collector(white_collector)
@@ -129,9 +144,10 @@ def simulate_game(game_type, rule_type, black_agent, white_agent, collect_experi
         black_collector.begin_episode()
         white_collector.begin_episode()
 
-        ui = CUI(game_type, rule_type, players)
-        ui.run()
-        game_result = ui.get_game().get_game_state().get_winner()
+        game.start()
+        game.join()
+
+        game_result = game.get_game_state().winner
 
         # set reward
         if game_result == Player.black:
@@ -147,40 +163,70 @@ def simulate_game(game_type, rule_type, black_agent, white_agent, collect_experi
         return_val = (game_result, (black_collector, white_collector))
     # evaluate game
     else:
-        ui.run()
-        game_result = ui.get_game().get_game_state().get_winner()
+        game.start()
+        game.join()
+
+        game_result = game.get_game_state().winner
         return_val = (game_result, None)
+
+    utils.print_board(game.get_game_state().board)
+    utils.print_winner(game_result)
 
     torch.cuda.empty_cache()
     print('simulation elapsed time:', time.time() - start_time)
+    result_queue.put(return_val)
 
-    return return_val
 
-
-def generate_experience(num_games, game_type, rule_type, black_agent, white_agent, collect_exp):
+def generate_experience(num_games: int, game_type: str, rule_type: str,
+                        black_agent: AbstractAgent, white_agent: AbstractAgent,
+                        collect_exp: bool) -> Tuple[Iterable[Player], Iterable[ExperienceCollector]]:
     start_time = time.time()
 
+    num_remain_games = num_games
     collectors = []
     winners = []
 
-    for game_cnt in range(num_games):
+    while num_remain_games > 0:
+        num_processes = min(NUM_MAX_PROCESSES, num_remain_games)
         print("Simulate games %d / %d..." %
-              (game_cnt + 1, num_games))
+              (num_games - num_remain_games, num_games))
 
-        collectors = []
-        winner, result_collectors = simulate_game(game_type, rule_type, black_agent, white_agent, collect_exp)
+        result_queue = mp.Queue()
+        processes = []
+        for process_num in range(num_processes):
+            device_num = process_num % NUM_DEVICES
 
-        winners.append(winner)
-        if(collect_exp):
-            collectors.append(result_collectors[0])
-            collectors.append(result_collectors[1])
+            p = mp.Process(target=simulate_game,
+                           args=(game_type,
+                                 rule_type,
+                                 black_agent,
+                                 white_agent,
+                                 device_num,
+                                 result_queue,
+                                 collect_exp))
+            p.daemon = True
+            p.start()
+            processes.append(p)
+
+        while processes:
+            running = any(p.is_alive() for p in processes)
+            while not result_queue.empty():
+                queue_item = result_queue.get()
+                winner = queue_item[0]
+                winners.append(winner)
+                if collect_exp:
+                    collectors.append(queue_item[1][0])
+                    collectors.append(queue_item[1][1])
+                num_remain_games -= 1
+            if not running:
+                break
 
     print('\n%d games elapsed time: %d' % (num_games, time.time() - start_time))
 
     return winners, collectors
 
 
-def evaluate_bot(game_type, rule_type, agent, prev_agent):
+def evaluate_bot(game_type: str, rule_type: str, agent: AbstractAgent, prev_agent: AbstractAgent) -> Tuple[float, float]:
     num_win = 0
     num_lose = 0
     num_draw = 0
