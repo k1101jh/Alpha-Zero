@@ -43,7 +43,7 @@ class ConvBnReluBlock(nn.Module):
             out_channels (int): Num of output channels.
         """
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU()
 
@@ -62,10 +62,10 @@ class ResidualBlock(nn.Module):
         """
         super().__init__()
         self.residual_block = nn.Sequential(
-            nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(in_channels),
             nn.ReLU(True),
-            nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(in_channels))
         self.relu = nn.ReLU(True)
 
@@ -86,7 +86,7 @@ class PolicyHead(nn.Module):
             board_size (int): Size of board.
         """
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 4, kernel_size=1)
+        self.conv = nn.Conv2d(in_channels, 4, kernel_size=1, bias=False)
         self.bn = nn.BatchNorm2d(4)
         self.relu = nn.ReLU(True)
         self.linear = nn.Linear(board_size**2 * 4, board_size**2)
@@ -112,7 +112,7 @@ class ValueHead(nn.Module):
             board_size (int): Size of board.
         """
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, 2, kernel_size=1)
+        self.conv = nn.Conv2d(in_channels, 2, kernel_size=1, bias=False)
         self.bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU(True)
         self.linear1 = nn.Linear(board_size * board_size * 2, 64)

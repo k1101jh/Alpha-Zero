@@ -1,7 +1,8 @@
+from typing import Tuple
 import pygame
 
-from codes.game_types import Player
-from codes.ui.button import Button
+from games.game_types import Player
+from ui.button import Button
 
 
 pygame.font.init()
@@ -10,7 +11,7 @@ LARGE_FONT = pygame.font.SysFont('freesans', 32, bold=True)
 
 
 class MenuUI:
-    def __init__(self, gui, size, pos):
+    def __init__(self, gui, size: Tuple[int, int], pos: Tuple[int, int]):
         """[summary]
             Menu to show informations, buttons.
         Args:
@@ -55,11 +56,11 @@ class MenuUI:
         self.text_rect.topleft = self.text_topleft
         self.surface.blit(self.text_surf, self.text_rect)
 
-    def check_button_clicked(self, pos):
+    def check_button_clicked(self, pos: Tuple[int, int]) -> None:
         for button in self.buttons:
             button.click(pos)
 
-    def render(self):
+    def render(self) -> None:
         self.surface.fill(self.bg_color)
 
         # render buttons
@@ -72,18 +73,18 @@ class MenuUI:
         self.text_rect.topleft = self.text_topleft
         self.surface.blit(self.text_surf, self.text_rect)
 
-    def update_text(self, text):
+    def update_text(self, text: str) -> None:
         self.text_surf = BASIC_FONT.render(text, True, self.text_color)
 
     @classmethod
-    def get_turn_text(cls, next_player):
+    def get_turn_text(cls, next_player: Player) -> str:
         if next_player is Player.black:
             return "Black Turn!"
         else:
             return "White Turn!"
 
     @classmethod
-    def get_win_text(cls, winner):
+    def get_win_text(cls, winner: Player) -> str:
         if winner is Player.black:
             return "Black win!!"
         elif winner is Player.white:
@@ -91,9 +92,9 @@ class MenuUI:
         else:
             return "Draw!!"
 
-    def update_turn(self, next_player):
+    def update_turn(self, next_player: Player) -> None:
         self.update_text(self.get_turn_text(next_player))
 
-    def game_over(self, winner):
+    def game_over(self, winner: Player) -> None:
         self.update_text(self.get_win_text(winner))
         self.new_game_button.activate()

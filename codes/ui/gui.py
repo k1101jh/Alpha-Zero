@@ -1,14 +1,16 @@
 import sys
+from typing import Tuple
 import pygame
 import queue
 
-from codes.games.game import Game
-from codes.game_types import Player
-from codes.game_types import Move
-from codes.ui.board_ui import BoardUI
-from codes.ui.menu_ui import MenuUI
-from codes import utils
-from codes.game_types import UIEvent
+from agents.abstract_agent import AbstractAgent
+from games.game import Game
+from games.game_types import Player
+from games.game_types import Move
+from ui.board_ui import BoardUI
+from ui.menu_ui import MenuUI
+from games.game_types import UIEvent
+import utils
 
 
 FPS = 30
@@ -25,7 +27,7 @@ MENU_POS = (BOARD_LENGTH, 0)
 
 
 class GUI:
-    def __init__(self, game_type, rule_type, players):
+    def __init__(self, game_type: str, rule_type: str, players: Tuple[AbstractAgent, AbstractAgent]):
         """[summary]
             Play game on GUI.
         Args:
@@ -61,7 +63,7 @@ class GUI:
         self.clock = pygame.time.Clock()
         self.display_surf = pygame.display.set_mode(WINDOW_REC_SIZE)
 
-    def new_game_start(self):
+    def new_game_start(self) -> None:
         self.game = Game(self.game_type,
                          self.rule_type,
                          self.players,
@@ -69,7 +71,7 @@ class GUI:
         self.mouse_input_queue.queue.clear()
         self.game.start()
 
-    def run(self):
+    def run(self) -> None:
         self.game.start()
         while True:
             for event in pygame.event.get():
@@ -103,19 +105,19 @@ class GUI:
                 self.event_queue.task_done()
             self.render()
 
-    def _render_menu(self):
+    def _render_menu(self) -> None:
         self.menu_ui.render()
         self.display_surf.blit(self.menu_ui.surface, MENU_POS)
 
-    def _render_board(self):
+    def _render_board(self) -> None:
         self.board_ui.render()
         self.display_surf.blit(self.board_ui.surface, BOARD_POS)
 
-    def render(self):
+    def render(self) -> None:
         self._render_menu()
         self._render_board()
         pygame.display.update()
         self.clock.tick(FPS)
 
-    def get_game(self):
+    def get_game(self) -> None:
         return self.game

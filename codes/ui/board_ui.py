@@ -1,17 +1,19 @@
+from typing import Iterable, Tuple
 import pygame
 import threading
 
-from codes.game_types import Player
-from codes.game_types import Point
-from codes.ui.sprites import StoneSprite
-from codes.ui.sprites import VisitCountSprite
+from games.game_types import Player
+from games.game_types import Point
+from games.board import Board
+from ui.sprites import StoneSprite
+from ui.sprites import VisitCountSprite
 
 
 BOARD_COLOR = (255, 165, 0)
 
 
 class BoardUI():
-    def __init__(self, board_size, board_length):
+    def __init__(self, board_size: int, board_length: int):
         """[summary]
         Args:
             board_size (int): Size of board.
@@ -35,18 +37,18 @@ class BoardUI():
 
         self.lock = threading.Lock()
 
-    def get_stone_coord(self, stone_point: Point):
+    def get_stone_coord(self, stone_point: Point) -> Tuple[int, int]:
         return [stone_point.col * self.line_interval + self.line_interval,
                 stone_point.row * self.line_interval + self.line_interval]
 
-    def point_from_mouse_coords(self, pos):
+    def point_from_mouse_coords(self, pos: Tuple[int, int]) -> Point:
         row = int((pos[1] - self.line_interval * 0.5) // self.line_interval)
         col = int((pos[0] - self.line_interval * 0.5) // self.line_interval)
 
         point = Point(row=row, col=col)
         return point
 
-    def set_stone_sprite(self, board):
+    def set_stone_sprite(self, board: Board) -> None:
         """[summary]
             Put stones on board ui.
         Args:
@@ -66,17 +68,17 @@ class BoardUI():
                         StoneSprite(self.stone_group, Player.white, stone_coord, self.line_interval)
         self.lock.release()
 
-    def set_visit_count_sprite(self, visit_counts):
+    def set_visit_count_sprite(self, visit_counts: Iterable[Point]) -> None:
         self.lock.acquire()
         self.visit_count_group.empty()
         if visit_counts is not None:
             for row in range(self.board_size):
                 for col in range(self.board_size):
                     counter_coord = self.get_stone_coord(Point(row, col))
-                    VisitCountSprite(self.visit_count_group, counter_coord, self.line_interval, str(visit_counts[int(row*self.board_size + col)]))
+                    VisitCountSprite(self.visit_count_group, counter_coord, self.line_interval, str(visit_counts[int(row * self.board_size + col)]))
         self.lock.release()
 
-    def render(self):
+    def render(self) -> None:
         self.lock.acquire()
         self.render_board()
         self.render_stone()
@@ -84,7 +86,7 @@ class BoardUI():
             self.render_visit_counts()
         self.lock.release()
 
-    def render_board(self):
+    def render_board(self) -> None:
         self.surface.fill(BOARD_COLOR)
         # 첫 번째 줄 위치
         line_start_point = int(self.line_interval)
@@ -97,12 +99,12 @@ class BoardUI():
             pygame.draw.line(self.surface, pygame.Color('Black'),
                              [line_start_point, axis], [line_end_point, axis], line_thickness)
 
-    def render_stone(self):
+    def render_stone(self) -> None:
         self.stone_surface.fill((0, 0, 0, 0))
         self.stone_group.draw(self.stone_surface)
         self.surface.blit(self.stone_surface, (0, 0))
 
-    def render_visit_counts(self):
+    def render_visit_counts(self) -> None:
         self.visit_count_surface.fill((0, 0, 0, 0))
         self.visit_count_group.draw(self.visit_count_surface)
         self.surface.blit(self.visit_count_surface, (0, 0))

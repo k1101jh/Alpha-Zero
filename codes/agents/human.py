@@ -1,9 +1,12 @@
-from codes.agents.abstract_agent import Agent
-from codes.game_types import Move
-from codes.utils import point_from_coords
+from multiprocessing import Queue
+from typing import List, Optional, Tuple
+from agents.abstract_agent import AbstractAgent
+from games.game_types import Move
+from games.abstract_game_state import AbstractGameState
+from utils import point_from_coords
 
 
-class Human(Agent):
+class Human(AbstractAgent):
     def __init__(self):
         """[summary]
             Human Player.
@@ -11,14 +14,14 @@ class Human(Agent):
         super().__init__()
         self.input_queue = None
 
-    def set_input_queue(self, input_queue):
+    def set_input_queue(self, input_queue: Queue) -> None:
         self.input_queue = input_queue
 
-    def select_move(self, game_state):
+    def select_move(self, game_state: AbstractGameState) -> Tuple[Move, Optional[List]]:
         if self.input_queue is None:
             while True:
                 try:
-                    inp = input('-- ')
+                    inp = input()
                     point = point_from_coords(inp.strip())
                     move = Move.play(point)
                     if game_state.check_valid_move(move):
