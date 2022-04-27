@@ -9,4 +9,5 @@
     "files.encoding": "utf8",
     "files.autoGuessEncoding": false,
     "python.autoComplete.addBrackets": true,
+    "python.analysis.completeFunctionParens": true,
 }
