@@ -8,11 +8,12 @@ from utils import print_board
 from utils import print_move
 from utils import print_visit_count
 from utils import print_winner
-from games.game_types import UIEvent
+from games.game_components import UIEvent
+from configuration import Configuration
 
 
 class CUI:
-    def __init__(self, game_type: str, rule_type: str, players: Tuple[AbstractAgent, AbstractAgent]):
+    def __init__(self, config: Configuration, players: Tuple[AbstractAgent, AbstractAgent]):
         """[summary]
             Play game on CUI.
         Args:
@@ -21,8 +22,8 @@ class CUI:
             players ([type]): [description]
         """
         self.event_queue = queue.Queue()
-        self.game = Game(game_type, rule_type, players, self.event_queue)
-        self.board_size = self.game.get_board_size()
+        self.game = Game(config, players, self.event_queue)
+        self.board_size = config.board_size
 
     def run(self) -> None:
         self.game.start()

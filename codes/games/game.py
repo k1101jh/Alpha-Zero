@@ -3,15 +3,16 @@ import threading
 from typing import Dict
 # import yappi
 
-import utils
-import games.game_types as game_types
+from configuration import Configuration
 from agents.abstract_agent import AbstractAgent
-from games.game_types import Move, Player, UIEvent
+from games.game_components import Move, Player, UIEvent
 from games.abstract_game_state import AbstractGameState
+
+from configuration import get_game_state_constructor, get_rule_constructor
 
 
 class Game(threading.Thread):
-    def __init__(self, game_type: str, rule_type: str,
+    def __init__(self, config: Configuration,
                  players: Dict[Player, AbstractAgent], event_queue: Queue = None):
         """[summary]
         Args:
@@ -23,9 +24,9 @@ class Game(threading.Thread):
         super().__init__()
         self.daemon = True
 
-        self.board_size = game_types.board_size_dict[game_type]
-        self.game_state_constructor = utils.get_game_state_constructor(game_type)
-        self.rule_constructor = utils.get_rule_constructor(game_type, rule_type)
+        self.board_size = config.board_size
+        self.game_state_constructor = get_game_state_constructor(config.game_type)
+        self.rule_constructor = get_rule_constructor(config.rule_type)
         
         self.rule = self.rule_constructor(self.board_size)
         self.players = players
@@ -42,9 +43,6 @@ class Game(threading.Thread):
         if self.event_queue is not None:
             self.event_queue.put((event, val))
             self.event_queue.join()
-
-    def get_board_size(self) -> int:
-        return self.game_state.get_board().board_size
 
     def get_game_state(self) -> AbstractGameState:
         return self.game_state

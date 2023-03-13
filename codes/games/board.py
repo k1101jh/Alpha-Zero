@@ -2,7 +2,7 @@ from typing import Iterable
 import numpy as np
 import copy
 
-from games.game_types import Player, Point
+from games.game_components import Player, Point
 from utils import copy_dict
 
 

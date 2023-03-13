@@ -5,7 +5,7 @@ from typing import Optional, TypeVar
 
 from games.abstract_rule import AbstractRule
 from games.board import Board
-from games.game_types import Move, Player
+from games.game_components import Move, Player
 
 
 Self = TypeVar("Self", bound="AbstractGameState")

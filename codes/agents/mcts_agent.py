@@ -6,7 +6,7 @@ import random
 
 from agents.abstract_agent import AbstractAgent
 from encoders.zero_encoder import ZeroEncoder
-from games.game_types import Move, Player
+from games.game_components import Move, Player
 from games.abstract_game_state import AbstractGameState
 
 
@@ -21,7 +21,7 @@ class TreeNode:
         self.last_move_idx = last_move_idx
         self.visit_count = 0
         self.branches: List[int] = []
-        for idx in range(state.board.board_size * state.board.board_size):
+        for idx in range(state.board.get_board_size() ** 2):
             if self.state.check_valid_move_idx(idx):
                 self.branches.append(idx)
         self.children: Dict[int, SelfTreeNode] = {}

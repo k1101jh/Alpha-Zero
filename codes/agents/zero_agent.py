@@ -13,7 +13,7 @@ from tqdm import tqdm
 from agents.abstract_agent import AbstractAgent
 from encoders.zero_encoder import ZeroEncoder
 from games.experience import ExperienceCollector, ExperienceDataset
-from games.game_types import Move, Player
+from games.game_components import Move, Player
 from games.abstract_game_state import AbstractGameState
 
 
@@ -147,6 +147,10 @@ class ZeroAgent(AbstractAgent):
     def set_device(self, device: str) -> None:
         self.device = torch.device(device)
         self.model = self.model.to(self.device)
+        for state in self.optimizer.state.values():
+            for k, v in state.items():
+                if torch.is_tensor(v):
+                    state[k] = v.to(device)
 
     def set_noise(self, noise: bool) -> None:
         self.noise = noise
@@ -167,7 +171,7 @@ class ZeroAgent(AbstractAgent):
     def create_node(self, state: AbstractGameState, move_idx: int = None, parent: TreeNode = None) -> TreeNode:
         with torch.no_grad():
             state_tensor = self.encoder.encode(state)
-            model_input = torch.tensor([state_tensor], dtype=torch.float, device=self.device)
+            model_input = torch.tensor(np.expand_dims(state_tensor, axis=0), dtype=torch.float, device=self.device)
             prior, value = self.model(model_input)
             prior = prior[0].detach()
             value = value[0][0].detach()

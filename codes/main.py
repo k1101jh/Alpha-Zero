@@ -1,4 +1,4 @@
-from games.game_types import Player
+from games.game_components import Player
 from agents.human import Human
 from agents.zero_agent import ZeroAgent
 from ui.cui import CUI
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     ai_first = False
 
     # AI settings
-    agent_version = 29
+    agent_version = 1
     num_threads = 1
     simulations_per_move = 350
 

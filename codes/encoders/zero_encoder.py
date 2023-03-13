@@ -1,9 +1,9 @@
 from typing import Tuple, TypeVar
 import numpy as np
 
-from games.game_types import Player
-from games.game_types import Point
-from games.game_types import Move
+from games.game_components import Player
+from games.game_components import Point
+from games.game_components import Move
 from games.abstract_game_state import AbstractGameState
 
 

@@ -45,7 +45,7 @@ class ConvBnReluBlock(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
         self.bn = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         out = self.conv(x)
@@ -64,10 +64,10 @@ class ResidualBlock(nn.Module):
         self.residual_block = nn.Sequential(
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(in_channels),
-            nn.ReLU(True),
+            nn.ReLU(inplace=True),
             nn.Conv2d(in_channels, in_channels, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(in_channels))
-        self.relu = nn.ReLU(True)
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         out = self.residual_block(x)
@@ -88,7 +88,7 @@ class PolicyHead(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 4, kernel_size=1, bias=False)
         self.bn = nn.BatchNorm2d(4)
-        self.relu = nn.ReLU(True)
+        self.relu = nn.ReLU(inplace=True)
         self.linear = nn.Linear(board_size**2 * 4, board_size**2)
         self.softmax = nn.Softmax(dim=-1)
 
@@ -114,7 +114,7 @@ class ValueHead(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(in_channels, 2, kernel_size=1, bias=False)
         self.bn = nn.BatchNorm2d(2)
-        self.relu = nn.ReLU(True)
+        self.relu = nn.ReLU(inplace=True)
         self.linear1 = nn.Linear(board_size * board_size * 2, 64)
         self.linear2 = nn.Linear(64, 1)
         self.tanh = nn.Tanh()
