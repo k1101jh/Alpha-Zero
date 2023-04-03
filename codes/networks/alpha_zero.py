@@ -1,6 +1,15 @@
 # 참고: https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/2_AlphaOmok/model.py
 
+import torch
 import torch.nn as nn
+
+
+def weight_init_xavier_uniform(submodule):
+    if isinstance(submodule, torch.nn.Conv2d):
+        torch.nn.init.xavier_uniform_(submodule.weight)
+    elif isinstance(submodule, torch.nn.BatchNorm2d):
+        submodule.weight.data.fill_(1.0)
+        submodule.bias.data.zero_()
 
 
 class AlphaZeroModel(nn.Module):
@@ -18,6 +27,8 @@ class AlphaZeroModel(nn.Module):
         self.layers = self._make_layer(mid_channels, num_blocks)
         self.policy = PolicyHead(mid_channels, board_size)
         self.value = ValueHead(mid_channels, board_size)
+        
+        self.layers.apply(weight_init_xavier_uniform)
 
     @classmethod
     def _make_layer(cls, in_channels, num_blocks):
@@ -91,6 +102,9 @@ class PolicyHead(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.linear = nn.Linear(board_size**2 * 4, board_size**2)
         self.softmax = nn.Softmax(dim=-1)
+        
+        self.conv.apply(weight_init_xavier_uniform)
+        self.bn.apply(weight_init_xavier_uniform)
 
     def forward(self, x):
         out = self.conv(x)
@@ -118,6 +132,9 @@ class ValueHead(nn.Module):
         self.linear1 = nn.Linear(board_size * board_size * 2, 64)
         self.linear2 = nn.Linear(64, 1)
         self.tanh = nn.Tanh()
+        
+        self.conv.apply(weight_init_xavier_uniform)
+        self.bn.apply(weight_init_xavier_uniform)
 
     def forward(self, x):
         out = self.conv(x)

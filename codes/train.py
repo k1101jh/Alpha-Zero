@@ -24,9 +24,11 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "4, 5, 6, 7"
 writer = SummaryWriter('runs')
 
 AGENT_NAME = "ZeroAgent"
-LOAD_AGENT_VERSION = 7
+LOAD_AGENT_VERSION = 15
 
 config = Configuration(
+    # game_type=GameType.TICTACTOE,
+    # rule_type=RuleType.TICTACTOE_BASE,
     game_type=GameType.OMOK,
     rule_type=RuleType.OMOK_BASE,
     encoder_type=EncoderType.ZERO_ENCODER,
@@ -43,8 +45,8 @@ config = Configuration(
     num_threads=1,
     num_simulate_games=32,
     num_test_games=16,
-    max_memory_size=300000,
-    simulations_per_move=1000,
+    max_memory_size=20000,
+    simulations_per_move=700,
 )
 
 
@@ -58,10 +60,11 @@ def train() -> None:
     # if agent file exists, load agent
     if os.path.exists(load_agent_filename):
         agent = ZeroAgent.load_agent(load_agent_filename, 'cpu',
+                                     simulations_per_move=config.simulations_per_move,
                                      num_threads_per_round=config.num_threads,
                                      noise=True)
     else:
-        model = AlphaZeroModel(encoder.shape()[0], num_blocks=8, board_size=config.board_size)
+        model = AlphaZeroModel(encoder.num_planes, num_blocks=10, board_size=config.board_size)
         agent = ZeroAgent(encoder, model, device='cpu',
                           simulations_per_move=config.simulations_per_move,
                           num_threads_per_round=config.num_threads,
@@ -70,19 +73,29 @@ def train() -> None:
 
     prev_agent = copy.deepcopy(agent)
     train_agent = copy.deepcopy(agent)
-    train_agent.set_device('cuda:0')
+    train_agent.set_device('cuda:3')
+    # agents = []
+    # prev_agents = []
+    # for i in range(config.num_devices):
+    #     prev_agent = copy.deepcopy(agent)
+    #     prev_agent.set_device(f'cuda:{i % 4}')
+    #     new_agent = copy.deepcopy(agent)
+    #     new_agent.set_device(f'cuda:{i % 4}')
+    #     agents.append(new_agent)
+    #     prev_agents.append(prev_agent)
     
     # generate experience memory
     memory = ExperienceDataset(config.board_size, encoder.num_planes, config.max_memory_size)
 
-    start_epoch = agent.epoch + 1
+    start_epoch = train_agent.epoch + 1
     for epoch in tqdm(range(start_epoch, config.epochs + 1), initial=start_epoch):
         num_black_wins = 0
         num_white_wins = 0
         num_draw = 0
 
         # generate experience
-        game_results, collectors = generate_experience(config, config.num_simulate_games, encoder, agent, copy.deepcopy(agent), collect_exp=True)
+        # game_results, collectors = generate_experience(config, config.num_simulate_games, encoder, agent, copy.deepcopy(agent), collect_exp=True)
+        game_results, collectors = generate_experience(config, config.num_simulate_games, encoder, agent, agent, collect_exp=True)
         memory.add_experiences(collectors)
 
         # game statistics
@@ -110,10 +123,15 @@ def train() -> None:
                             'Epoch Loss': loss},
                            epoch)
         agent.model.load_state_dict(train_agent.model.state_dict())
-        agent.optimizer.load_state_dict(train_agent.optimizer.state_dict())
-        agent.scheduler.load_state_dict(train_agent.scheduler.state_dict())
-        agent.add_num_simulated_games(num_actual_simulated_games)
-        agent.epoch = epoch
+        train_agent.add_num_simulated_games(num_actual_simulated_games)
+        train_agent.epoch = epoch
+        
+        # for agent in agents[1:]:
+        #     agent.model.load_state_dict(train_agent.model.state_dict())
+        #     agent.optimizer.load_state_dict(train_agent.optimizer.state_dict())
+        #     agent.scheduler.load_state_dict(train_agent.scheduler.state_dict())
+        # agent.add_num_simulated_games(num_actual_simulated_games)
+        # agent.epoch = epoch
 
         if epoch % config.test_term == 0:
             win_rate, draw_rate = evaluate_bot(config, encoder, agent, prev_agent)
@@ -124,8 +142,8 @@ def train() -> None:
 
             agent_version += 1
             update_agent_filename = utils.get_agent_filename(config.game_type, agent_version)
-            agent.save_agent(update_agent_filename)
-            prev_agent = copy.deepcopy(agent)
+            train_agent.save_agent(update_agent_filename)
+            prev_agent.model.load_state_dict(train_agent.model.state_dict())
 
     writer.close()
 
@@ -138,58 +156,32 @@ def simulate_game(config: Configuration, encoder, black_agent: AbstractAgent, wh
         Player.black: black_agent,
         Player.white: white_agent,
     }
-
-    game = Game(config, players)
-
-    # set device
+    game = Game(config, encoder, collect_experience, players)
+    
     black_agent.set_device(device_num)
     white_agent.set_device(device_num)
 
+    game.start()
+    game.join()
+
+    game_result = game.get_game_state().winner
+    
+    return_val = (game_result, None)
+    # Train 시
     if collect_experience is True:
-        black_collector = ExperienceCollector(config.board_size, encoder.num_planes)
-        white_collector = ExperienceCollector(config.board_size, encoder.num_planes)
-
-        black_agent.set_collector(black_collector)
-        white_agent.set_collector(white_collector)
-
-        black_collector.begin_episode()
-        white_collector.begin_episode()
-
-        game.start()
-        game.join()
-
-        game_result = game.get_game_state().winner
-
-        # set reward
-        if game_result == Player.black:
-            black_collector.complete_episode(1)
-            white_collector.complete_episode(-1)
-        elif game_result == Player.white:
-            black_collector.complete_episode(-1)
-            white_collector.complete_episode(1)
-        else:
-            black_collector.complete_episode(0)
-            white_collector.complete_episode(0)
-
-        return_val = (game_result, (black_collector, white_collector))
-    # evaluate game
-    else:
-        game.start()
-        game.join()
-
-        game_result = game.get_game_state().winner
-        return_val = (game_result, None)
+        collectors = list(game.get_collectors().values())
+        return_val = (game_result, collectors)
 
     utils.print_board(game.get_game_state().board)
     utils.print_winner(game_result)
 
     torch.cuda.empty_cache()
-    print('simulation elapsed time:', time.time() - start_time)
+    print('simulation execution time:', time.time() - start_time)
     result_queue.put(return_val)
 
 
 def generate_experience(config: Configuration, num_games, encoder,
-                        black_agent: AbstractAgent, white_agent: AbstractAgent,
+                        black_agent, white_agent,
                         collect_exp: bool) -> Tuple[Iterable[Player], Iterable[ExperienceCollector]]:
     start_time = time.time()
 
@@ -200,8 +192,7 @@ def generate_experience(config: Configuration, num_games, encoder,
 
     while num_remain_games > 0:
         num_processes = min(config.num_processes, num_remain_games)
-        print("Simulate games %d / %d..." %
-              (num_games - num_remain_games, num_games))
+        print("Simulate games %d / %d..." % (num_games - num_remain_games, num_games))
 
         result_queue = mp.Queue()
         processes = []
@@ -227,15 +218,15 @@ def generate_experience(config: Configuration, num_games, encoder,
                 winner = queue_item[0]
                 winners.append(winner)
                 if collect_exp:
-                    collectors.append(queue_item[1][0])
-                    collectors.append(queue_item[1][1])
+                    for collector in queue_item[1]:
+                        collectors.append(collector)
                 num_remain_games -= 1
             if not running:
                 break
             
-        time.sleep(3)
+        time.sleep(2)
 
-    print('\n%d games elapsed time: %d' % (num_games, time.time() - start_time))
+    print('\n%d games execution time: %d' % (num_games, time.time() - start_time))
 
     return winners, collectors
 

@@ -7,13 +7,14 @@ from configuration import Configuration
 from agents.abstract_agent import AbstractAgent
 from games.game_components import Move, Player, UIEvent
 from games.abstract_game_state import AbstractGameState
+from games.experience import ExperienceCollector
 
 from configuration import get_game_state_constructor, get_rule_constructor
 
 
 class Game(threading.Thread):
-    def __init__(self, config: Configuration,
-                 players: Dict[Player, AbstractAgent], event_queue: Queue = None):
+    def __init__(self, config: Configuration, encoder, collect_exp,
+                 players: Dict[Player, AbstractAgent], event_queue: Queue = None,):
         """[summary]
         Args:
             game_type ([type]): [description]
@@ -31,6 +32,13 @@ class Game(threading.Thread):
         self.rule = self.rule_constructor(self.board_size)
         self.players = players
         self.event_queue = event_queue
+        self.encoder = encoder
+        self.collect_exp = collect_exp
+        
+        self.collectors = {}
+        if self.collect_exp:
+            self.collectors[Player.black] = ExperienceCollector(config.board_size, self.encoder.num_planes)
+            self.collectors[Player.white] = ExperienceCollector(config.board_size, self.encoder.num_planes)
         
         # initialize game
         self.game_state: AbstractGameState = None
@@ -46,13 +54,25 @@ class Game(threading.Thread):
 
     def get_game_state(self) -> AbstractGameState:
         return self.game_state
+    
+    def get_collectors(self) -> Dict:
+        return self.collectors
 
     def run(self) -> None:
         self.enqueue(UIEvent.BOARD, self.game_state.get_board())
+        if self.collect_exp:
+            for collector in self.collectors.values():
+                collector.begin_episode()
+        
         while not self.game_state.game_over:
             # yappi.set_clock_type("wall")
             # yappi.start()
             move, visit_counts = self.players[self.game_state.player].select_move(self.game_state)
+            
+            if self.collect_exp:
+                root_state_tensor = self.encoder.encode(self.game_state)
+                self.collectors[self.game_state.player].record_decision(root_state_tensor, visit_counts)
+                
             self.game_state = self.game_state.apply_move(move)
 
             self.enqueue(UIEvent.VISIT_COUNTS, visit_counts)
@@ -66,6 +86,14 @@ class Game(threading.Thread):
 
         winner = self.game_state.winner
         self.enqueue(UIEvent.GAME_OVER, winner)
+        
+        if self.collect_exp:
+            if winner == Player.both:
+                for collector in self.collectors.values():
+                    collector.complete_episode(0)
+            else:
+                self.collectors[winner].complete_episode(1)
+                self.collectors[winner.other].complete_episode(-1)
 
     def get_cur_player(self) -> Player:
         return self.players[self.game_state.player]

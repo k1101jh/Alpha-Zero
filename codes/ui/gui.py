@@ -11,7 +11,7 @@ from ui.board_ui import BoardUI
 from ui.menu_ui import MenuUI
 from games.game_components import UIEvent
 import utils
-from configuration import Configuration
+from configuration import Configuration, get_encoder
 
 
 FPS = 30
@@ -40,12 +40,15 @@ class GUI:
         self.mouse_input_queue = queue.Queue()
 
         self.config = config
+        self.encoder = get_encoder(config.encoder_type)(config.board_size)
         self.players = players
 
         self.players[Player.black].set_input_queue(self.mouse_input_queue)
         self.players[Player.white].set_input_queue(self.mouse_input_queue)
         self.board_size = config.board_size
         self.game = Game(config,
+                         self.encoder,
+                         False,
                          players,
                          self.event_queue)
         # self.board_size = self.game.get_board_size()
@@ -64,6 +67,8 @@ class GUI:
 
     def new_game_start(self) -> None:
         self.game = Game(self.config,
+                         self.encoder,
+                         False,
                          self.players,
                          self.event_queue)
         self.mouse_input_queue.queue.clear()

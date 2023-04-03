@@ -9,7 +9,7 @@ from utils import print_move
 from utils import print_visit_count
 from utils import print_winner
 from games.game_components import UIEvent
-from configuration import Configuration
+from configuration import Configuration, get_encoder
 
 
 class CUI:
@@ -22,7 +22,8 @@ class CUI:
             players ([type]): [description]
         """
         self.event_queue = queue.Queue()
-        self.game = Game(config, players, self.event_queue)
+        self.encoder = get_encoder(config.encoder_type)(config.board_size)
+        self.game = Game(config, self.encoder, False, players, self.event_queue)
         self.board_size = config.board_size
 
     def run(self) -> None:

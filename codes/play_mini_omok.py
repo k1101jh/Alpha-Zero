@@ -33,7 +33,8 @@ if __name__ == '__main__':
 
     config = Configuration(
         GameType.OMOK,
-        RuleType.OMOK_BASE
+        RuleType.OMOK_BASE,
+        simulations_per_move=500,
     )
 
     sample_models = {
@@ -50,16 +51,13 @@ if __name__ == '__main__':
 
     # AI settings
     agent_file_name = sample_models[config.game_type]
-    num_threads = 1
-    simulations_per_move = 500
 
     if num_ai == 0:
         black_player = Human()
         white_player = Human()
     else:
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        loaded_agent = ZeroAgent.load_agent(agent_file_name, device, num_threads, False)
-        loaded_agent.simulations_per_move = simulations_per_move
+        loaded_agent = ZeroAgent.load_agent(agent_file_name, device, config.simulations_per_move, config.num_threads, False)
         
         if num_ai == 1:
             if ai_first is True:
