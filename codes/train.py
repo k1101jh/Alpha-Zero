@@ -10,9 +10,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 from agents.abstract_agent import AbstractAgent
 from agents.zero_agent import ZeroAgent
+from agents.diffusion_agent import DiffusionAgent
 from encoders.zero_encoder import ZeroEncoder
 from games.game import Game
 from networks.alpha_zero import AlphaZeroModel
+from networks.unet import SimpleUNet
 from games.experience import ExperienceCollector
 from games.experience import ExperienceDataset
 from games.game_types import board_size_dict
@@ -23,9 +25,10 @@ import utils
 writer = SummaryWriter('../runs')
 
 NUM_DEVICES = torch.cuda.device_count()
-AGENT_NAME = "ZeroAgent"
-GAME_TYPE = "MiniOmok"
-RULE_TYPE = "OmokFreeRule"
+AGENT_NAME = "DiffusionAgent"
+# GAME_TYPE = "MiniOmok"
+GAME_TYPE = "TicTacToe"
+RULE_TYPE = "TicTacToeRule"
 BOARD_SIZE = board_size_dict[GAME_TYPE]
 MAX_MEMORY_SIZE = 30000
 EPOCHS = 2000
@@ -33,6 +36,7 @@ TEST_TERM = 20
 BATCH_SIZE = 512
 SIMULATIONS_PER_MOVE = 500
 NUM_MAX_PROCESSES = os.cpu_count()
+# NUM_MAX_PROCESSES = 1
 NUM_SIMULATE_GAMES = os.cpu_count()
 NUM_TEST_GAMES_HALF = os.cpu_count()
 NUM_THREADS_PER_ROUND = 1
@@ -53,11 +57,14 @@ def train() -> None:
                                      num_threads_per_round=NUM_THREADS_PER_ROUND,
                                      noise=True)
     else:
-        model = AlphaZeroModel(encoder.shape()[0], num_blocks=8, board_size=BOARD_SIZE)
-        agent = ZeroAgent(encoder, model, device='cpu',
-                          simulations_per_move=SIMULATIONS_PER_MOVE,
-                          num_threads_per_round=NUM_THREADS_PER_ROUND,
-                          lr=LEARNING_RATE)
+        # model = AlphaZeroModel(encoder.shape()[0], num_blocks=8, board_size=BOARD_SIZE)
+        model = SimpleUNet(1, 1, time_dim=256, state_dim=256)
+        # agent = ZeroAgent(encoder, model, device='cpu',
+        #                   simulations_per_move=SIMULATIONS_PER_MOVE,
+        #                   num_threads_per_round=NUM_THREADS_PER_ROUND,
+        #                   lr=LEARNING_RATE)
+        agent = DiffusionAgent(encoder, model, device='cpu',
+                               lr=LEARNING_RATE)
         agent_version = 0
 
     prev_agent = copy.deepcopy(agent)

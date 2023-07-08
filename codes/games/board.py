@@ -14,7 +14,7 @@ class Board:
             board_size (int): Size of board.
         """
         self.board_size = board_size
-        self.grid = np.zeros((self.board_size, self.board_size), dtype=np.int)
+        self.grid = np.zeros((self.board_size, self.board_size), dtype=int)
         self.player_num_stones = {
             Player.black: 0,
             Player.white: 0,
