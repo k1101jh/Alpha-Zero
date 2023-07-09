@@ -2,8 +2,8 @@ from typing import Iterable, Tuple
 import pygame
 import threading
 
-from games.game_types import Player
-from games.game_types import Point
+from games.game_components import Player
+from games.game_components import Point
 from games.board import Board
 from ui.sprites import StoneSprite
 from ui.sprites import VisitCountSprite

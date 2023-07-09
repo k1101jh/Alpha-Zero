@@ -2,14 +2,13 @@
 import os
 import sys
 import io
-import importlib
 import math
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from games.game_types import Move, Player
-from games.game_types import Point
-from games.game_types import game_name_dict
-from games.game_types import game_state_dict
+from games.game_components import Move, Player
+from games.game_components import Point
+
+from configuration import GameType
 
 sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding='utf-8')
@@ -21,18 +20,6 @@ STONE_TO_CHAR = {
     Player.black.value: ' ○ ',
     Player.white.value: ' ● ',
 }
-
-
-def get_rule_constructor(game_name: str, rule_name: str):
-    module = importlib.import_module(f'games.{game_name_dict[game_name]}.rule')
-    constructor = getattr(module, rule_name)
-    return constructor
-
-
-def get_game_state_constructor(name: str):
-    module = importlib.import_module(f'games.{game_name_dict[name]}.{game_name_dict[name]}_game_state')
-    constructor = getattr(module, game_state_dict[name])
-    return constructor
 
 
 def print_turn(game_state) -> None:
@@ -106,10 +93,10 @@ def is_on_grid(point: Point, board_size: int) -> bool:
     return 0 <= point.row < board_size and 0 <= point.col < board_size
 
 
-def get_agent_filename(game_name: str, version: int, postfix: str = "", prefix: str = "") -> str:
+def get_agent_filename(game_type: GameType, version: int, postfix: str = "", prefix: str = "") -> str:
     cur_file_path = os.path.abspath(__file__)
     project_path = os.path.dirname(os.path.dirname(cur_file_path))
-    dir_path = os.path.join(project_path, f'trained_models/{game_name}')
+    dir_path = os.path.join(project_path, f'trained_models/{game_type.name}')
     file_name = f'{postfix}-v{version}{prefix}.pth'
 
     os.makedirs(dir_path, exist_ok=True)

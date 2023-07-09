@@ -1,7 +1,7 @@
 from typing import Tuple
 import pygame
 
-from games.game_types import Player
+from games.game_components import Player
 from ui.button import Button
 
 

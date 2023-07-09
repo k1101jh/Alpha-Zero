@@ -6,7 +6,7 @@ from game_types import Point
 from game_types import Move
 from games.tic_tac_toe.tic_tac_toe_game_state import Board
 from games.tic_tac_toe.tic_tac_toe_game_state import TicTacToeGameState
-from games.tic_tac_toe.rule import TicTacToeRule
+from games.tic_tac_toe.tic_tac_toe_rule import TicTacToeRule
 
 
 class TestEncoder():

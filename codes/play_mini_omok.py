@@ -1,12 +1,16 @@
 import argparse
-
+import os
 import torch
 
-from games.game_types import Player
+from games.game_components import Player
 from agents.human import Human
 from agents.zero_agent import ZeroAgent
 from ui.cui import CUI
 from ui.gui import GUI
+
+from configuration import GameType, RuleType, Configuration
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 
 if __name__ == '__main__':
@@ -17,26 +21,43 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     
-    game_type = "MiniOmok"
-    rule_type = "OmokFreeRule"
+    # config = Configuration(
+    #     GameType.MINI_OMOK,
+    #     RuleType.OMOK_BASE,
+    # )
+    
+    # config = Configuration(
+    #     GameType.TICTACTOE,
+    #     RuleType.TICTACTOE_BASE,
+    # )
+
+    config = Configuration(
+        GameType.OMOK,
+        RuleType.OMOK_BASE,
+        simulations_per_move=500,
+    )
+
+    sample_models = {
+        GameType.TICTACTOE: './sample_models/TICTACTOE/model.pth',
+        GameType.MINI_OMOK: './sample_models/MINI_OMOK/model.pth',
+        GameType.OMOK: './trained_models/OMOK/-v7.pth'
+    }
+    
     ui_type = "GUI"
     if args.cui:
-        ui_type = 'CUI'
+        ui_type = "CUI"
     num_ai = args.numai
     ai_first = args.aifirst
 
     # AI settings
-    agent_file_name = './sample_models/MiniOmok/model.pth'
-    num_threads = 1
-    simulations_per_move = 500
+    agent_file_name = sample_models[config.game_type]
 
     if num_ai == 0:
         black_player = Human()
         white_player = Human()
     else:
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-        loaded_agent = ZeroAgent.load_agent(agent_file_name, device, num_threads, False)
-        loaded_agent.simulations_per_move = simulations_per_move
+        loaded_agent = ZeroAgent.load_agent(agent_file_name, device, config.simulations_per_move, config.num_threads, False)
         
         if num_ai == 1:
             if ai_first is True:
@@ -55,8 +76,8 @@ if __name__ == '__main__':
     }
 
     if ui_type == "GUI" or ui_type == "gui":
-        ui = GUI(game_type, rule_type, players)
+        ui = GUI(config, players)
         ui.run()
     else:
-        ui = CUI(game_type, rule_type, players)
+        ui = CUI(config, players)
         ui.run()

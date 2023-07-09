@@ -13,7 +13,7 @@ from tqdm import tqdm
 from agents.abstract_agent import AbstractAgent
 from encoders.zero_encoder import ZeroEncoder
 from games.experience import ExperienceCollector, ExperienceDataset
-from games.game_types import Move, Player
+from games.game_components import Move, Player
 from games.abstract_game_state import AbstractGameState
 
 
@@ -88,7 +88,8 @@ class TreeNode:
 class ZeroAgent(AbstractAgent):
     def __init__(self, encoder: ZeroEncoder, model: nn.Module, device: str,
                  c: float = 5.0, simulations_per_move: int = 500, num_threads_per_round: int = 1,
-                 noise: bool = True, lr: float = 1e-4):
+                 noise: bool = True, lr: float = 1e-4,
+                 epoch: int = 0, num_simulated_games: int = 0):
         """[summary]
             Use Monte Carlo Tree Search algorithm with DeepLearning.
         Args:
@@ -109,57 +110,24 @@ class ZeroAgent(AbstractAgent):
         self.model.eval()
         self.noise = noise
         self.alpha = 0.2
-        self.collector = None
 
-        self.num_simulated_games = 0
         self.num_threads_per_round = num_threads_per_round
         self.simulations_per_move = simulations_per_move
-        self.epoch = 0
+
+        self.epoch = epoch
+        self.num_simulated_games = num_simulated_games
 
         self.lr = lr
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr)
         self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=150, gamma=0.5)
-
-    # def __deepcopy__(self, memo):
-        # """[summary]
-        # Args:
-        #     memodict (dict, optional): [description]. Defaults to {}.
-
-        # Returns:
-        #     ZeroAgent: Copied ZeroAgent.
-        # """
-        # copy_object = ZeroAgent(self.encoder, self.model, self.device, self.c, self.simulations_per_move, self.num_threads_per_round, self.noise)
-        # copy_object.set_collector(self.collector)
-        # copy_object.num_simulated_games = self.num_simulated_games
-        # copy_object.epoch = self.epoch
-        # copy_object.optimizer.load_state_dict(self.optimizer.state_dict())
-        # copy_object.scheduler.load_state_dict(self.scheduler.state_dict())
-
-        # return copy_object
-        
-        # cls = self.__class__
-        # result = cls.__new__(cls)
-        # memo[id(self)] = result
-        # for k, v in self.__dict__.items():
-        #     setattr(result, k, deepcopy(v, memo))
-        # return result
 
     def set_device(self, device: str) -> None:
         self.device = torch.device(device)
         self.model = self.model.to(self.device)
-
-    def set_noise(self, noise: bool) -> None:
-        self.noise = noise
-
-    def set_collector(self, collector: ExperienceCollector) -> None:
-        self.collector = collector
-
-    def set_agent_data(self, epoch: int = None, num_simulated_games: int = None) -> None:
-        if epoch is not None:
-            self.epoch = epoch
-
-        if num_simulated_games is not None:
-            self.num_simulated_games = num_simulated_games
+        for state in self.optimizer.state.values():
+            for k, v in state.items():
+                if torch.is_tensor(v):
+                    state[k] = v.to(self.device)
 
     def add_num_simulated_games(self, num: int) -> None:
         self.num_simulated_games += num
@@ -167,7 +135,7 @@ class ZeroAgent(AbstractAgent):
     def create_node(self, state: AbstractGameState, move_idx: int = None, parent: TreeNode = None) -> TreeNode:
         with torch.no_grad():
             state_tensor = self.encoder.encode(state)
-            model_input = torch.tensor([state_tensor], dtype=torch.float, device=self.device)
+            model_input = torch.tensor(np.expand_dims(state_tensor, axis=0), dtype=torch.float, device=self.device)
             prior, value = self.model(model_input)
             prior = prior[0].detach()
             value = value[0][0].detach()
@@ -204,12 +172,12 @@ class ZeroAgent(AbstractAgent):
         return heapq.nlargest(num, node.move_idxes(), key=lambda x: branch_scores[x])
 
     @classmethod
-    def get_value(cls, winner: Player) -> int:
+    def get_value(cls, winner: Player) -> float:
         # 무승부인 경우
         if winner == Player.both:
-            return 0
+            return 0.
         else:
-            return 1
+            return 1.
 
     def select_move(self, game_state: AbstractGameState) -> Tuple[Move, Optional[np.ndarray]]:
         root = self.create_node(game_state)
@@ -233,10 +201,6 @@ class ZeroAgent(AbstractAgent):
             root.visit_count(idx)
             for idx in range(self.encoder.num_moves())
         ])
-
-        if self.collector is not None:
-            root_state_tensor = self.encoder.encode(game_state)
-            self.collector.record_decision(root_state_tensor, visit_counts)
 
         selected_move_idx = max(root.move_idxes(), key=root.visit_count)
         return self.encoder.decode_move_index(selected_move_idx), visit_counts
@@ -279,7 +243,7 @@ class ZeroAgent(AbstractAgent):
         self.model.train()
 
         dataloader = DataLoader(dataset, batch_size=batch_size, num_workers=4,
-                                shuffle=False, pin_memory=True)
+                                shuffle=False, pin_memory=False)
         policy_loss_sum = 0
         value_loss_sum = 0
         epoch_loss_sum = 0
@@ -300,13 +264,17 @@ class ZeroAgent(AbstractAgent):
 
                 epoch_loss = policy_loss + value_loss
 
-                policy_loss_sum += policy_loss.detach() * state.size(0)
-                value_loss_sum += value_loss.detach() * state.size(0)
-                epoch_loss_sum += epoch_loss.detach() * state.size(0)
+                policy_loss_sum += policy_loss.item() * state.size(0)
+                value_loss_sum += value_loss.item() * state.size(0)
+                epoch_loss_sum += epoch_loss.item() * state.size(0)
                 
                 self.optimizer.zero_grad()
                 epoch_loss.backward()
                 self.optimizer.step()
+                
+            # del state
+            # del p
+            # del reward
 
         self.scheduler.step()
 
@@ -315,6 +283,8 @@ class ZeroAgent(AbstractAgent):
         loss = policy_loss + value_loss
 
         self.model.eval()
+        
+        del dataloader
 
         return loss, policy_loss, value_loss
 
@@ -331,8 +301,8 @@ class ZeroAgent(AbstractAgent):
         torch.save(state, pthfile)
 
     @staticmethod
-    def load_agent(pthfilename: str, device: str, num_threads_per_round: int = 1, noise: bool = False) -> SelfZeroAgent:
-        loaded_file = torch.load(pthfilename, map_location='cpu')
+    def load_agent(pthfilename: str, device: str, simulations_per_move: int = 500, num_threads_per_round: int = 1, noise: bool = False) -> SelfZeroAgent:
+        loaded_file = torch.load(pthfilename, map_location=device)
         encoder = loaded_file['encoder']
         model = loaded_file['model']
         num_simulated_games = loaded_file['num_simulated_games']
@@ -341,10 +311,11 @@ class ZeroAgent(AbstractAgent):
         scheduler_state_dict = loaded_file['scheduler']
 
         loaded_agent = ZeroAgent(encoder, model, device,
+                                 simulations_per_move=simulations_per_move,
                                  num_threads_per_round=num_threads_per_round,
-                                 noise=noise)
+                                 noise=noise, epoch=epoch, num_simulated_games=num_simulated_games)
+        
         loaded_agent.optimizer.load_state_dict(optimizer_state_dict)
         loaded_agent.scheduler.load_state_dict(scheduler_state_dict)
-        loaded_agent.set_agent_data(epoch=epoch, num_simulated_games=num_simulated_games)
         print("simulated %d games." % num_simulated_games)
         return loaded_agent

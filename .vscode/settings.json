@@ -2,6 +2,10 @@
     "python.linting.pylintEnabled": false,
     "python.linting.enabled": true,
     "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": [
+        "--max-line-length=150",
+        "--ignore=W293"
+    ],
     "files.encoding": "utf8",
     "files.autoGuessEncoding": false,
     "python.autoComplete.addBrackets": true,
