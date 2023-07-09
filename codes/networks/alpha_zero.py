@@ -27,7 +27,7 @@ class AlphaZeroModel(nn.Module):
         self.layers = self._make_layer(mid_channels, num_blocks)
         self.policy = PolicyHead(mid_channels, board_size)
         self.value = ValueHead(mid_channels, board_size)
-        
+
         self.layers.apply(weight_init_xavier_uniform)
 
     @classmethod

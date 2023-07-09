@@ -8,14 +8,14 @@ class GameType(Enum):
     TICTACTOE = auto()
     MINI_OMOK = auto()
     OMOK = auto()
-    
-    
+
+
 class RuleType(Enum):
     TICTACTOE_BASE = auto()
     OMOK_BASE = auto()
     OMOK_RENJU = auto()
-    
-    
+
+
 class EncoderType(Enum):
     ZERO_ENCODER = auto()
 

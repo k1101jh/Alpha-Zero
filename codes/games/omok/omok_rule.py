@@ -78,29 +78,3 @@ class OmokRenjuRule(OmokFreeRule):
             board_size (int): Size of board.
         """
         super().__init__(board_size)
-
-"""
-    def get_stone_counts(self, game_state, point: Point):
-        cnts = np.zeros(4)
-        for direction in range(4):
-            cnts[direction] = self.get_stone_count(game_state, point, direction)
-        return cnts
-        
-    def find_empty_point(self, game_state, point, direction):
-        dx, dy = self.get_dx_dy(direction)
-        next_point = point
-        while True:
-            next_point = Point(next_point.row + dx, next_point.col + dy)
-            if self.is_on_grid(next_point):
-                if game_state.board.get(next_point) is not game_state.next_player:
-                    break
-            else:
-                break
-                
-        if self.is_on_grid(next_point):
-            if self.is_empty(game_state.board.get(next_point), include_forbidden_points=True):
-                return next_point
-        return None
-    
-
-"""

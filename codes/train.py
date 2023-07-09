@@ -32,7 +32,7 @@ config = Configuration(
     game_type=GameType.OMOK,
     rule_type=RuleType.OMOK_BASE,
     encoder_type=EncoderType.ZERO_ENCODER,
-    
+
     # training settings
     epochs=2000,
     test_term=50,
