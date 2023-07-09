@@ -12,6 +12,7 @@ from agents.abstract_agent import AbstractAgent
 from agents.zero_agent import ZeroAgent
 from games.game import Game
 from networks.alpha_zero import AlphaZeroModel
+from networks.unet import SimpleUNet
 from games.experience import ExperienceCollector
 from games.experience import ExperienceDataset
 from games.game_components import Player
@@ -64,11 +65,16 @@ def train() -> None:
                                      num_threads_per_round=config.num_threads,
                                      noise=True)
     else:
+
+#        model = SimpleUNet(1, 1, time_dim=256, state_dim=256)
+#        agent = DiffusionAgent(encoder, model, device='cpu',
+#                               lr=LEARNING_RATE)
         model = AlphaZeroModel(encoder.num_planes, num_blocks=10, board_size=config.board_size)
         agent = ZeroAgent(encoder, model, device='cpu',
                           simulations_per_move=config.simulations_per_move,
                           num_threads_per_round=config.num_threads,
                           lr=config.learning_rate)
+
         agent_version = 0
 
     prev_agent = copy.deepcopy(agent)

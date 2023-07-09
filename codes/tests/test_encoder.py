@@ -84,7 +84,7 @@ if __name__ == "__main__":
     rule = TicTacToeRule(board.board_size)
     board.grid = np.array([[1, 2, 0],
                            [2, 1, 0],
-                           [0, 1, 2]], dtype=np.int8)
+                           [0, 1, 2]], dtype=int)
     game_state = TicTacToeGameState(rule, board, Player.black, None)
     encoder = TestEncoder(3)
 
