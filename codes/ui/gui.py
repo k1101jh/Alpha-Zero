@@ -5,12 +5,13 @@ import queue
 
 from agents.abstract_agent import AbstractAgent
 from games.game import Game
-from games.game_types import Player
-from games.game_types import Move
+from games.game_components import Player
+from games.game_components import Move
 from ui.board_ui import BoardUI
 from ui.menu_ui import MenuUI
-from games.game_types import UIEvent
+from games.game_components import UIEvent
 import utils
+from configuration import Configuration, get_encoder
 
 
 FPS = 30
@@ -27,7 +28,7 @@ MENU_POS = (BOARD_LENGTH, 0)
 
 
 class GUI:
-    def __init__(self, game_type: str, rule_type: str, players: Tuple[AbstractAgent, AbstractAgent]):
+    def __init__(self, config: Configuration, players: Tuple[AbstractAgent, AbstractAgent]):
         """[summary]
             Play game on GUI.
         Args:
@@ -38,17 +39,19 @@ class GUI:
         self.event_queue = queue.Queue()
         self.mouse_input_queue = queue.Queue()
 
-        self.game_type = game_type
-        self.rule_type = rule_type
+        self.config = config
+        self.encoder = get_encoder(config.encoder_type)(config.board_size)
         self.players = players
 
         self.players[Player.black].set_input_queue(self.mouse_input_queue)
         self.players[Player.white].set_input_queue(self.mouse_input_queue)
-        self.game = Game(game_type,
-                         rule_type,
+        self.board_size = config.board_size
+        self.game = Game(config,
+                         self.encoder,
+                         False,
                          players,
                          self.event_queue)
-        self.board_size = self.game.get_board_size()
+        # self.board_size = self.game.get_board_size()
 
         # pygame setting
         pygame.init()
@@ -57,15 +60,15 @@ class GUI:
                                   pygame.MOUSEBUTTONUP])
 
         self.menu_ui = MenuUI(self, MENU_REC_SIZE, MENU_POS)
-        self.board_ui = BoardUI(self.board_size,
-                                BOARD_LENGTH)
+        self.board_ui = BoardUI(self.board_size, BOARD_LENGTH)
 
         self.clock = pygame.time.Clock()
         self.display_surf = pygame.display.set_mode(WINDOW_REC_SIZE)
 
     def new_game_start(self) -> None:
-        self.game = Game(self.game_type,
-                         self.rule_type,
+        self.game = Game(self.config,
+                         self.encoder,
+                         False,
                          self.players,
                          self.event_queue)
         self.mouse_input_queue.queue.clear()

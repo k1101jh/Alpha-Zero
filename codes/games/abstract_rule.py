@@ -2,7 +2,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from typing import Optional, Tuple
 
-from games.game_types import Player
+from games.game_components import Player
 
 
 class AbstractRule(metaclass=ABCMeta):

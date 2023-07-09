@@ -3,7 +3,7 @@ import copy
 from typing import TypeVar
 
 from games.abstract_game_state import AbstractGameState
-from games.game_types import Move, Player, Point
+from games.game_components import Move, Player, Point
 from games.abstract_rule import AbstractRule
 from games.board import Board
 import utils

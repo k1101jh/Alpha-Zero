@@ -1,7 +1,7 @@
 from multiprocessing import Queue
 from typing import List, Optional, Tuple
 from agents.abstract_agent import AbstractAgent
-from games.game_types import Move
+from games.game_components import Move
 from games.abstract_game_state import AbstractGameState
 from utils import point_from_coords
 

@@ -3,9 +3,9 @@ import copy
 from typing import TypeVar
 
 from games.abstract_game_state import AbstractGameState
-from games.game_types import Move, Player, Point
+from games.game_components import Move, Player, Point
 from games.board import Board
-from games.tic_tac_toe.rule import TicTacToeRule
+from games.tic_tac_toe.tic_tac_toe_rule import TicTacToeRule
 import utils
 
 
@@ -47,8 +47,8 @@ class TicTacToeGameState(AbstractGameState):
         Returns:
             bool: Is move valid.
         """
-        return utils.is_on_grid(move.point, self.board.board_size) and self.board.get(move.point) == 0
+        return utils.is_on_grid(move.point, self.get_board_size()) and self.board.get(move.point) == 0
 
     def check_valid_move_idx(self, move_idx: int) -> bool:
-        point = Point(move_idx // self.board.board_size, move_idx % self.board.board_size)
+        point = Point(move_idx // self.get_board_size(), move_idx % self.get_board_size())
         return self.board.get(point) == 0
