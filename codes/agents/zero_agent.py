@@ -301,7 +301,8 @@ class ZeroAgent(AbstractAgent):
         torch.save(state, pthfile)
 
     @staticmethod
-    def load_agent(pthfilename: str, device: str, simulations_per_move: int = 500, num_threads_per_round: int = 1, noise: bool = False) -> SelfZeroAgent:
+    def load_agent(pthfilename: str, device: str, simulations_per_move: int = 500,
+                   num_threads_per_round: int = 1, noise: bool = False) -> SelfZeroAgent:
         loaded_file = torch.load(pthfilename, map_location=device)
         encoder = loaded_file['encoder']
         model = loaded_file['model']

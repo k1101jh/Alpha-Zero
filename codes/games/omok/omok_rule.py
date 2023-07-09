@@ -38,6 +38,7 @@ class OmokFreeRule(AbstractRule):
 
     def check_game_over(self, game_state: AbstractGameState) -> Tuple[Optional[Player], bool]:
         game_over = False
+        winner = None
         
         # 마지막 이동이 돌을 놓는 행동이었을 경우
         if game_state.last_move.is_play:
@@ -47,13 +48,6 @@ class OmokFreeRule(AbstractRule):
             elif game_state.get_board().get_num_empty_points() == 0:
                 game_over = True
                 winner = Player.both
-            else:
-                winner = None
-        
-        # 더 이상 둘 곳이 없으면 게임 종료
-        if game_state.board.get_num_empty_points() == 0:
-            game_over = True
-            winner = Player.both
 
         return winner, game_over
 

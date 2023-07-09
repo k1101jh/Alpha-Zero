@@ -32,15 +32,16 @@ class TicTacToeRule(AbstractRule):
 
     def check_game_over(self, game_state: AbstractGameState) -> Tuple[Optional[Player], bool]:
         game_over = False
+        winner = None
+        
         if game_state.last_move.is_play:
             game_over = self.is_three(game_state, game_state.last_move.point)
             if game_over:
-                winner = game_state.player.other
-            else:
-                winner = None
-        if game_state.board.get_num_empty_points() == 0:
-            game_over = True
-            winner = Player.both
+                winner = game_state.player.other                
+            elif game_state.board.get_num_empty_points() == 0:
+                game_over = True
+                winner = Player.both
+                
         return winner, game_over
 
     def is_three(self, game_state: AbstractGameState, point: Point) -> bool:
